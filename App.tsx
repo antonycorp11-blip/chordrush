@@ -255,7 +255,7 @@ const App: React.FC = () => {
         <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto relative">
 
           {/* Logo da Escola (Topo) */}
-          <div className="absolute top-8 w-32 opacity-80 hover:opacity-100 transition-opacity">
+          <div className="absolute top-10 w-56 opacity-90 hover:opacity-100 transition-opacity">
             <img
               src="/school_logo.png"
               alt="Logo Escola"
