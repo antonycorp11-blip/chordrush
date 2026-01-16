@@ -46,6 +46,15 @@ const App: React.FC = () => {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Refs para evitar "stale closure" no timer (garantir score atualizado no fim do jogo)
+  const scoreRef = useRef(0);
+  const levelRef = useRef(1);
+  const sessionXPRef = useRef(0);
+
+  useEffect(() => { scoreRef.current = score; }, [score]);
+  useEffect(() => { levelRef.current = currentLevel; }, [currentLevel]);
+  useEffect(() => { sessionXPRef.current = sessionXP; }, [sessionXP]);
+
   // Persistence: Salva sempre que stats mudar
   useEffect(() => {
     localStorage.setItem('chordRush_stats', JSON.stringify(stats));
@@ -157,16 +166,22 @@ const App: React.FC = () => {
 
   const endGame = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
+
+    // Captura os valores reais dos refs (evita o problema do score fixado em 0)
+    const finalScore = scoreRef.current;
+    const finalLevel = levelRef.current;
+    const finalXP = sessionXPRef.current;
+
     setGameState(GameState.GAMEOVER);
 
     setStats(prev => ({
       ...prev,
-      highScore: Math.max(prev.highScore, score),
-      totalXP: prev.totalXP + sessionXP
+      highScore: Math.max(prev.highScore, finalScore),
+      totalXP: prev.totalXP + finalXP
     }));
 
-    // Envia score para o backend
-    await saveScoreToBackend(score, currentLevel);
+    // Envia score real para o backend
+    await saveScoreToBackend(finalScore, finalLevel);
   };
 
   const handleAnswer = (selectedNote: NoteName) => {
@@ -239,20 +254,7 @@ const App: React.FC = () => {
       {gameState === GameState.MENU && (
         <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
 
-          <div className="absolute top-6 left-0 right-0 flex flex-col items-center gap-2 pointer-events-none">
-            <button
-              className="px-6 py-2 bg-black/40 text-[10px] font-black text-orange-400 rounded-full border border-orange-500/20 uppercase tracking-widest pointer-events-auto hover:bg-black/60 transition-all active:scale-95 shadow-lg"
-              onClick={() => alert('Troca de XP por G-Coins em breve!')}
-            >
-              <i className="fa-solid fa-coins mr-2"></i>
-              Trocar XP por G-Coins
-            </button>
-            <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest">
-              Saldo: 0 G-Coins
-            </div>
-          </div>
-
-          <div className="mt-8 mb-4 flex items-center justify-center">
+          <div className="mt-12 mb-4 flex items-center justify-center">
             <div className="w-40 h-40 bg-orange-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(249,115,22,0.3)] animate-pulse">
               <i className="fa-solid fa-music text-6xl text-white"></i>
             </div>
