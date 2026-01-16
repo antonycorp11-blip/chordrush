@@ -222,7 +222,7 @@ const App: React.FC = () => {
 
       setScore(prev => prev + 1);
       setSessionXP(prev => prev + xp);
-      setTimeLeft(prev => Math.min(prev + bonus, 240)); // Cap at 4 mins
+      setTimeLeft(prev => Math.min(prev + bonus, 600)); // Cap at 10 mins (was 4)
 
       // Mostrar indicador de tempo adicionado
       setTimeAdded(bonus);
@@ -431,6 +431,17 @@ const App: React.FC = () => {
                 onClick={handleAnswer}
               />
             ))}
+          </div>
+
+          {/* Botão de Encerrar Partida */}
+          <div className="mt-auto px-10 pb-2">
+            <button
+              onClick={endGame}
+              className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <i className="fa-solid fa-flag-checkered"></i>
+              Encerrar Partida
+            </button>
           </div>
         </div>
       )}
