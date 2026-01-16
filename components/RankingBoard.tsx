@@ -43,7 +43,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
             <div className="w-full max-w-lg flex flex-col h-full z-10 p-6">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6">
                     <button
                         onClick={onBack}
                         className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white shadow-xl"
@@ -57,6 +57,25 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         <span className="text-[10px] text-orange-500/60 uppercase font-black tracking-[0.3em] mt-2">
                             Torneio Musical
                         </span>
+                    </div>
+                </div>
+
+                {/* Prize Banner */}
+                <div className="mb-6 bg-gradient-to-r from-orange-600 to-orange-500 rounded-3xl p-4 shadow-[0_10px_30px_rgba(249,115,22,0.3)] border border-orange-400/30">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">
+                            🍫
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-100/80 mb-0.5">Prêmio da Semana</h3>
+                            <p className="font-black text-white text-lg leading-tight uppercase italic">Barra de Chocolate Cacau Show</p>
+                        </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-orange-100">
+                        <span className="flex items-center gap-1.5 text-white bg-orange-700/50 px-2 py-1 rounded-lg">
+                            <i className="fa-regular fa-clock"></i> Termina Domingo 12:00
+                        </span>
+                        <span>Reseta à Meia-Noite</span>
                     </div>
                 </div>
 
