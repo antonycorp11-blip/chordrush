@@ -52,10 +52,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     </button>
                     <div className="flex flex-col items-end">
                         <h2 className="text-4xl font-black italic tracking-tighter text-white uppercase leading-none">
-                            HALL OF <span className="text-orange-500 underline decoration-4 underline-offset-4">FAME</span>
+                            RANKING <span className="text-orange-500 underline decoration-4 underline-offset-4">SEMANAL</span>
                         </h2>
                         <span className="text-[10px] text-orange-500/60 uppercase font-black tracking-[0.3em] mt-2">
-                            Weekly Tournament
+                            Torneio Musical
                         </span>
                     </div>
                 </div>

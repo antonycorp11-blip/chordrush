@@ -252,72 +252,83 @@ const App: React.FC = () => {
 
       {/* MENU SCREEN */}
       {gameState === GameState.MENU && (
-        <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto relative">
+        <div className="w-full h-full flex flex-col items-center justify-start p-6 overflow-y-auto relative bg-neutral-900 pt-10">
 
-          {/* Logo da Escola (Topo) */}
-          <div className="absolute top-10 w-56 opacity-90 hover:opacity-100 transition-opacity">
+          {/* Logo da Escola (Acima de tudo) */}
+          <div className="w-full max-w-[240px] mb-8 animate-fade-in">
             <img
               src="/school_logo.png"
-              alt="Logo Escola"
-              className="w-full h-auto object-contain drop-shadow-xl"
-              onError={(e) => (e.currentTarget.style.display = 'none')} // Esconde se não houver imagem
+              alt="Logo Studio Acorde"
+              className="w-full h-auto object-contain drop-shadow-[0_5px_15px_rgba(249,115,22,0.3)]"
+              onError={(e) => {
+                // Tenta carregar sem a barra inicial se falhar
+                if (!e.currentTarget.src.includes('public')) {
+                  e.currentTarget.src = 'school_logo.png';
+                } else {
+                  e.currentTarget.style.display = 'none';
+                }
+              }}
             />
           </div>
 
-          <div className="mt-16 mb-6 flex items-center justify-center">
+          <div className="mb-6 flex items-center justify-center">
             <div className="relative group">
-              <div className="absolute inset-0 bg-orange-500 rounded-[40px] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity animate-pulse"></div>
-              <div className="w-48 h-48 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[40px] flex items-center justify-center shadow-2xl border border-white/10 overflow-hidden relative">
-                <img src="/logo_game.png" alt="Chord Rush Icon" className="w-full h-full object-cover p-4 group-hover:scale-110 transition-transform duration-500" />
+              <div className="absolute inset-0 bg-orange-500 rounded-[30px] blur-2xl opacity-10 group-hover:opacity-30 transition-opacity"></div>
+              <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[30px] flex items-center justify-center shadow-2xl border border-white/10 overflow-hidden relative">
+                <img
+                  src="/logo_game.png"
+                  alt="Chord Rush Icon"
+                  className="w-full h-full object-cover p-3 group-hover:scale-110 transition-transform duration-500"
+                  onError={(e) => { e.currentTarget.src = 'logo_game.png' }}
+                />
               </div>
             </div>
           </div>
 
-          <div className="text-center mb-10">
-            <h1 className="text-7xl font-black tracking-tighter italic leading-none">
+          <div className="text-center mb-8">
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter italic leading-none">
               CHORD<span className="text-orange-500">RUSH</span>
             </h1>
             <div className="flex items-center justify-center gap-2 mt-2">
-              <div className="h-px w-8 bg-orange-500/30"></div>
-              <p className="text-orange-500 font-black tracking-[0.4em] text-[10px] uppercase">Master the Fretboard</p>
-              <div className="h-px w-8 bg-orange-500/30"></div>
+              <div className="h-px w-6 bg-orange-500/30"></div>
+              <p className="text-orange-500 font-black tracking-[0.3em] text-[8px] md:text-[10px] uppercase">Master the Fretboard</p>
+              <div className="h-px w-6 bg-orange-500/30"></div>
             </div>
           </div>
 
-          <div className="w-full max-w-sm space-y-6">
+          <div className="w-full max-w-sm space-y-5">
             <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl blur opacity-10 group-focus-within:opacity-30 transition duration-1000"></div>
               <input
                 type="text"
                 placeholder="DIGITE SEU NOME"
                 value={stats.playerName}
                 onChange={(e) => handleNameChange(e.target.value)}
-                className="relative w-full bg-neutral-900 border-2 border-white/10 rounded-2xl p-5 text-center text-2xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all shadow-2xl placeholder:opacity-20"
+                className="relative w-full bg-neutral-950 border-2 border-white/5 rounded-2xl p-4 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all shadow-2xl placeholder:text-white/10"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => startNewGame(GameMode.NORMAL)}
-                className="group relative overflow-hidden bg-white text-black font-black p-6 rounded-2xl text-xl hover:bg-neutral-100 active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300"
+                className="group relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300"
               >
-                <span className="relative z-10">NORMAL</span>
+                <span className="relative z-10 uppercase">Normal</span>
               </button>
               <button
                 onClick={() => startNewGame(GameMode.HARD)}
-                className="group relative overflow-hidden bg-orange-500 text-white font-black p-6 rounded-2xl text-xl hover:bg-orange-600 active:scale-95 transition-all shadow-xl border-b-4 border-orange-700"
+                className="group relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-orange-700"
               >
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 animate-pulse"></div>
-                <span className="relative z-10">DIFÍCIL</span>
+                <span className="relative z-10 uppercase">Difícil</span>
               </button>
             </div>
 
             <button
               onClick={() => setGameState(GameState.RANKING)}
-              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-950 font-black p-5 rounded-2xl text-xl hover:from-yellow-300 hover:to-yellow-500 active:scale-95 transition-all shadow-2xl border-b-4 border-yellow-700 flex items-center justify-center gap-3"
+              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-950 font-black p-5 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-yellow-700 flex items-center justify-center gap-3"
             >
-              <i className="fa-solid fa-trophy text-2xl"></i>
-              HALL OF FAME
+              <i className="fa-solid fa-trophy text-xl"></i>
+              RANKING SEMANAL
             </button>
           </div>
 
