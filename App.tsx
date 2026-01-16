@@ -82,19 +82,33 @@ const App: React.FC = () => {
   const saveScoreToBackend = async (finalScore: number, finalLevel: number) => {
     try {
       const deviceId = getDeviceId();
-      // Busca ID do player
-      const { data: playerData } = await supabase
+      // Primeiro garante que o player existe
+      let { data: playerData, error: fetchError } = await supabase
         .from('players')
         .select('id')
         .eq('device_id', deviceId)
-        .single();
+        .maybeSingle();
+
+      if (!playerData) {
+        // Se não existir, tenta criar (último recurso)
+        const nameToSave = stats.playerName.trim() || `JOGADOR-${deviceId.slice(0, 4)}`;
+        const { data: newData, error: createError } = await supabase
+          .from('players')
+          .insert({ device_id: deviceId, name: nameToSave })
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        playerData = newData;
+      }
 
       if (playerData) {
-        await supabase.from('scores').insert({
+        const { error: insertError } = await supabase.from('scores').insert({
           player_id: playerData.id,
           score: finalScore,
           level: finalLevel
         });
+        if (insertError) throw insertError;
       }
     } catch (err) {
       console.error('Erro ao salvar pontuação:', err);
@@ -102,9 +116,9 @@ const App: React.FC = () => {
   };
 
   // Game Logic
-  const startNewGame = (selectedMode: GameMode) => {
-    // Salva/Atualiza o nome no backend ao iniciar
-    savePlayerProfile();
+  const startNewGame = async (selectedMode: GameMode) => {
+    // Salva/Atualiza o nome no backend ao iniciar e espera terminar
+    await savePlayerProfile();
     setMode(selectedMode);
     const startLevel = selectedMode === GameMode.HARD ? 3 : 1;
     setCurrentLevel(startLevel);
@@ -141,7 +155,7 @@ const App: React.FC = () => {
     }, 1000);
   };
 
-  const endGame = () => {
+  const endGame = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setGameState(GameState.GAMEOVER);
 
@@ -152,7 +166,7 @@ const App: React.FC = () => {
     }));
 
     // Envia score para o backend
-    saveScoreToBackend(score, currentLevel);
+    await saveScoreToBackend(score, currentLevel);
   };
 
   const handleAnswer = (selectedNote: NoteName) => {
