@@ -252,47 +252,72 @@ const App: React.FC = () => {
 
       {/* MENU SCREEN */}
       {gameState === GameState.MENU && (
-        <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto">
+        <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto relative">
 
-          <div className="mt-12 mb-4 flex items-center justify-center">
-            <div className="w-40 h-40 bg-orange-500 rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(249,115,22,0.3)] animate-pulse">
-              <i className="fa-solid fa-music text-6xl text-white"></i>
+          {/* Logo da Escola (Topo) */}
+          <div className="absolute top-8 w-32 opacity-80 hover:opacity-100 transition-opacity">
+            <img
+              src="/school_logo.png"
+              alt="Logo Escola"
+              className="w-full h-auto object-contain drop-shadow-xl"
+              onError={(e) => (e.currentTarget.style.display = 'none')} // Esconde se não houver imagem
+            />
+          </div>
+
+          <div className="mt-16 mb-6 flex items-center justify-center">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-orange-500 rounded-[40px] blur-2xl opacity-20 group-hover:opacity-40 transition-opacity animate-pulse"></div>
+              <div className="w-48 h-48 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[40px] flex items-center justify-center shadow-2xl border border-white/10 overflow-hidden relative">
+                <img src="/logo_game.png" alt="Chord Rush Icon" className="w-full h-full object-cover p-4 group-hover:scale-110 transition-transform duration-500" />
+              </div>
             </div>
           </div>
 
-          <h1 className="text-6xl font-black mb-2 tracking-tighter italic">CHORD<span className="text-orange-500">RUSH</span></h1>
-          <p className="text-white/50 mb-10 font-bold tracking-widest text-xs uppercase">Treinamento de Cifras</p>
+          <div className="text-center mb-10">
+            <h1 className="text-7xl font-black tracking-tighter italic leading-none">
+              CHORD<span className="text-orange-500">RUSH</span>
+            </h1>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <div className="h-px w-8 bg-orange-500/30"></div>
+              <p className="text-orange-500 font-black tracking-[0.4em] text-[10px] uppercase">Master the Fretboard</p>
+              <div className="h-px w-8 bg-orange-500/30"></div>
+            </div>
+          </div>
 
-          <div className="w-full max-w-sm space-y-4">
-            <input
-              type="text"
-              placeholder="SEU NOME"
-              value={stats.playerName}
-              onChange={(e) => handleNameChange(e.target.value)}
-              className="w-full bg-white/10 border-2 border-white/20 rounded-2xl p-4 text-center text-xl font-bold focus:outline-none focus:border-orange-500 transition-colors shadow-inner"
-            />
+          <div className="w-full max-w-sm space-y-6">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-1000"></div>
+              <input
+                type="text"
+                placeholder="DIGITE SEU NOME"
+                value={stats.playerName}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className="relative w-full bg-neutral-900 border-2 border-white/10 rounded-2xl p-5 text-center text-2xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all shadow-2xl placeholder:opacity-20"
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => startNewGame(GameMode.NORMAL)}
-                className="bg-white text-black font-black p-5 rounded-2xl text-lg hover:bg-neutral-200 active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300"
+                className="group relative overflow-hidden bg-white text-black font-black p-6 rounded-2xl text-xl hover:bg-neutral-100 active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300"
               >
-                NORMAL
+                <span className="relative z-10">NORMAL</span>
               </button>
               <button
                 onClick={() => startNewGame(GameMode.HARD)}
-                className="bg-orange-500 text-white font-black p-5 rounded-2xl text-lg hover:bg-orange-600 active:scale-95 transition-all shadow-xl border-b-4 border-orange-700"
+                className="group relative overflow-hidden bg-orange-500 text-white font-black p-6 rounded-2xl text-xl hover:bg-orange-600 active:scale-95 transition-all shadow-xl border-b-4 border-orange-700"
               >
-                DIFÍCIL
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 animate-pulse"></div>
+                <span className="relative z-10">DIFÍCIL</span>
               </button>
             </div>
 
             <button
               onClick={() => setGameState(GameState.RANKING)}
-              className="w-full bg-yellow-400 text-yellow-900 font-black p-4 rounded-2xl text-lg hover:bg-yellow-300 active:scale-95 transition-all shadow-xl border-b-4 border-yellow-600 mt-4 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-950 font-black p-5 rounded-2xl text-xl hover:from-yellow-300 hover:to-yellow-500 active:scale-95 transition-all shadow-2xl border-b-4 border-yellow-700 flex items-center justify-center gap-3"
             >
-              <i className="fa-solid fa-trophy"></i>
-              VER RANKING SEMANAL
+              <i className="fa-solid fa-trophy text-2xl"></i>
+              HALL OF FAME
             </button>
           </div>
 
@@ -368,25 +393,24 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Main Area */}
-          <div className="flex-1 flex flex-col items-center justify-center relative">
-            <div className={`text-[100px] md:text-[150px] font-black tracking-tighter transition-transform duration-300 drop-shadow-xl ${feedback ? 'scale-110' : 'scale-100'} ${feedback?.type === 'wrong' ? 'shake text-red-500' : ''}`}>
+          <div className="flex-1 flex flex-col items-center justify-center relative py-10">
+            <div className={`text-[120px] md:text-[180px] font-black tracking-tighter transition-transform duration-300 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${feedback ? 'scale-110' : 'scale-100'} ${feedback?.type === 'wrong' ? 'shake text-red-500' : 'text-white'}`}>
               {chordsPool[currentIndex]?.symbol}
             </div>
 
-            <div className="h-24 flex items-center justify-center text-center px-4">
+            <div className="absolute bottom-0 w-full flex items-center justify-center">
               {feedback && (
-                <div className={`px-8 py-4 rounded-3xl text-base font-black uppercase tracking-widest pop-in shadow-2xl flex flex-col items-center border-2 ${feedback.type === 'correct' ? 'bg-green-500 text-white border-green-400' : 'bg-white text-red-600 border-red-200'}`}>
+                <div className={`px-10 py-5 rounded-[32px] text-xl font-black uppercase tracking-widest pop-in shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col items-center border-[3px] ${feedback.type === 'correct' ? 'bg-green-500 text-white border-green-400' : 'bg-white text-red-600 border-red-200'}`}>
                   {feedback.type === 'correct' ? (
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-fire animate-bounce text-yellow-300"></i>
-                      <span>ACERTOU! {combo > 1 ? `x${combo}` : ''}</span>
+                    <div className="flex items-center gap-3">
+                      <i className="fa-solid fa-fire text-yellow-300 animate-bounce"></i>
+                      <span>PERFEITO! {combo > 1 ? `x${combo}` : ''}</span>
                     </div>
                   ) : (
-                    <>
-                      <span className="text-[10px] font-black opacity-60 mb-1">RESPOSTA CORRETA:</span>
-                      <span className="text-lg leading-none">{feedback.note}</span>
-                    </>
+                    <div className="flex flex-col items-center">
+                      <span className="text-[12px] opacity-60 mb-1">ERRADO! RESPOSTA:</span>
+                      <span className="text-3xl leading-none">{feedback.note}</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -394,7 +418,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Opções de Resposta */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             {currentOptions.map((opt, i) => (
               <NoteButton
                 key={`${currentIndex}-${i}-${opt}`}

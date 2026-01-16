@@ -10,15 +10,15 @@ interface NoteButtonProps {
 
 export const NoteButton: React.FC<NoteButtonProps> = ({ note, onClick, disabled }) => {
   // Ajusta o tamanho da fonte dinamicamente com base no comprimento da string
-  let fontSize = 'text-2xl';
+  let fontSize = 'text-5xl'; // Aumentado significativamente
   if (note.length > 25) {
-    fontSize = 'text-[10px]';
+    fontSize = 'text-lg';
   } else if (note.length > 15) {
-    fontSize = 'text-xs';
+    fontSize = 'text-xl';
   } else if (note.length > 8) {
-    fontSize = 'text-sm';
+    fontSize = 'text-3xl';
   }
-  
+
   return (
     <button
       onClick={() => onClick(note)}
