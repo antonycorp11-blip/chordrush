@@ -45,6 +45,8 @@ const App: React.FC = () => {
   const [combo, setCombo] = useState(0);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isEndingRef = useRef(false);
 
   // Refs para evitar "stale closure" no timer (garantir score atualizado no fim do jogo)
   const scoreRef = useRef(0);
@@ -126,8 +128,14 @@ const App: React.FC = () => {
 
   // Game Logic
   const startNewGame = async (selectedMode: GameMode) => {
+    // Limpa estados de sessões anteriores
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    isEndingRef.current = false;
+
     // Salva/Atualiza o nome no backend ao iniciar e espera terminar
     await savePlayerProfile();
+
     setMode(selectedMode);
     const startLevel = selectedMode === GameMode.HARD ? 3 : 1;
     setCurrentLevel(startLevel);
@@ -136,6 +144,7 @@ const App: React.FC = () => {
     setSessionXP(0);
     setTimeAdded(null);
     setCombo(0);
+    setFeedback(null);
 
     // Initial pool
     let initialPool = getChordsForLevel(startLevel);
@@ -150,22 +159,38 @@ const App: React.FC = () => {
     setCurrentIndex(0);
     setCurrentOptions(generateOptions(initialPool[0]));
     setGameState(GameState.PLAYING);
-
-    // Start Timer
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          endGame();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
   };
 
+  // Timer Effect
+  useEffect(() => {
+    if (gameState === GameState.PLAYING) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) return 0;
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [gameState]);
+
+  // End Game Trigger
+  useEffect(() => {
+    if (gameState === GameState.PLAYING && timeLeft === 0 && !isEndingRef.current) {
+      endGame();
+    }
+  }, [timeLeft, gameState]);
+
   const endGame = async () => {
+    if (isEndingRef.current) return;
+    isEndingRef.current = true;
+
     if (timerRef.current) clearInterval(timerRef.current);
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
 
     // Captura os valores reais dos refs (evita o problema do score fixado em 0)
     const finalScore = scoreRef.current;
@@ -213,9 +238,12 @@ const App: React.FC = () => {
     }
 
     // Auto next after feedback delay
-    setTimeout(() => {
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => {
       setFeedback(null);
-      nextChord();
+      if (gameState === GameState.PLAYING) {
+        nextChord();
+      }
     }, 800);
   };
 
@@ -275,14 +303,16 @@ const App: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => startNewGame(GameMode.NORMAL)}
-                  className="bg-white text-black font-black py-4 rounded-xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300 uppercase"
+                  onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
+                  disabled={!stats.playerName.trim()}
+                  className={`bg-white text-black font-black py-4 rounded-xl text-lg transition-all shadow-xl border-b-4 border-neutral-300 uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed border-neutral-500' : 'active:scale-95 hover:bg-neutral-100'}`}
                 >
                   Normal
                 </button>
                 <button
-                  onClick={() => startNewGame(GameMode.HARD)}
-                  className="bg-orange-500 text-white font-black py-4 rounded-xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-orange-700 uppercase"
+                  onClick={() => stats.playerName.trim() && startNewGame(GameMode.HARD)}
+                  disabled={!stats.playerName.trim()}
+                  className={`bg-orange-500 text-white font-black py-4 rounded-xl text-lg transition-all shadow-xl border-b-4 border-orange-700 uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed border-orange-900' : 'active:scale-95 hover:bg-orange-400'}`}
                 >
                   Difícil
                 </button>
