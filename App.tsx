@@ -350,6 +350,18 @@ const App: React.FC = () => {
       {/* PLAYING SCREEN */}
       {gameState === GameState.PLAYING && (
         <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
+
+          {/* Botão de Encerrar Partida (TOP) */}
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={endGame}
+              className="px-4 py-2 bg-red-500/10 bg-black/20 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <i className="fa-solid fa-flag-checkered"></i>
+              Encerrar
+            </button>
+          </div>
+
           {/* Header */}
           <div className="flex justify-between items-center mb-2 relative">
             <div className="flex flex-col relative">
@@ -431,17 +443,6 @@ const App: React.FC = () => {
                 onClick={handleAnswer}
               />
             ))}
-          </div>
-
-          {/* Botão de Encerrar Partida */}
-          <div className="mt-auto px-10 pb-2">
-            <button
-              onClick={endGame}
-              className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <i className="fa-solid fa-flag-checkered"></i>
-              Encerrar Partida
-            </button>
           </div>
         </div>
       )}
