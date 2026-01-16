@@ -252,102 +252,65 @@ const App: React.FC = () => {
 
       {/* MENU SCREEN */}
       {gameState === GameState.MENU && (
-        <div className="w-full h-full flex flex-col items-center justify-start p-6 overflow-y-auto relative bg-neutral-900 pt-10">
+        <div className="w-full h-full max-h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative bg-[#121212]">
 
-          {/* Logo da Escola (Acima de tudo) */}
-          <div className="w-full max-w-[240px] mb-8 animate-fade-in">
-            <img
-              src="/school_logo.png"
-              alt="Logo Studio Acorde"
-              className="w-full h-auto object-contain drop-shadow-[0_5px_15px_rgba(249,115,22,0.3)]"
-              onError={(e) => {
-                // Tenta carregar sem a barra inicial se falhar
-                if (!e.currentTarget.src.includes('public')) {
-                  e.currentTarget.src = 'school_logo.png';
-                } else {
-                  e.currentTarget.style.display = 'none';
-                }
-              }}
-            />
-          </div>
+          <div className="w-full max-w-sm flex flex-col items-center gap-6">
+            <div className="text-center">
+              <h1 className="text-6xl sm:text-8xl font-black tracking-tighter italic leading-none block">
+                CHORD<span className="text-orange-500">RUSH</span>
+              </h1>
+              <p className="text-orange-500 font-black tracking-[0.3em] text-xs uppercase">Master the Fretboard v2</p>
+            </div>
 
-          <div className="mb-6 flex items-center justify-center">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-orange-500 rounded-[30px] blur-2xl opacity-10 group-hover:opacity-30 transition-opacity"></div>
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[30px] flex items-center justify-center shadow-2xl border border-white/10 overflow-hidden relative">
-                <img
-                  src="/logo_game.png"
-                  alt="Chord Rush Icon"
-                  className="w-full h-full object-cover p-3 group-hover:scale-110 transition-transform duration-500"
-                  onError={(e) => { e.currentTarget.src = 'logo_game.png' }}
+            <div className="w-full space-y-3">
+              <div className="relative group">
+                <input
+                  type="text"
+                  placeholder="Seu Nome"
+                  value={stats.playerName}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-4 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
                 />
               </div>
-            </div>
-          </div>
 
-          <div className="text-center mb-8">
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter italic leading-none">
-              CHORD<span className="text-orange-500">RUSH</span>
-            </h1>
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <div className="h-px w-6 bg-orange-500/30"></div>
-              <p className="text-orange-500 font-black tracking-[0.3em] text-[8px] md:text-[10px] uppercase">Master the Fretboard</p>
-              <div className="h-px w-6 bg-orange-500/30"></div>
-            </div>
-          </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => startNewGame(GameMode.NORMAL)}
+                  className="bg-white text-black font-black py-4 rounded-xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300 uppercase"
+                >
+                  Normal
+                </button>
+                <button
+                  onClick={() => startNewGame(GameMode.HARD)}
+                  className="bg-orange-500 text-white font-black py-4 rounded-xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-orange-700 uppercase"
+                >
+                  Difícil
+                </button>
+              </div>
 
-          <div className="w-full max-w-sm space-y-5">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-2xl blur opacity-10 group-focus-within:opacity-30 transition duration-1000"></div>
-              <input
-                type="text"
-                placeholder="DIGITE SEU NOME"
-                value={stats.playerName}
-                onChange={(e) => handleNameChange(e.target.value)}
-                className="relative w-full bg-neutral-950 border-2 border-white/5 rounded-2xl p-4 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all shadow-2xl placeholder:text-white/10"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => startNewGame(GameMode.NORMAL)}
-                className="group relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-neutral-300"
+                onClick={() => setGameState(GameState.RANKING)}
+                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-950 font-black p-4 rounded-xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-yellow-700 flex items-center justify-center gap-3"
               >
-                <span className="relative z-10 uppercase">Normal</span>
-              </button>
-              <button
-                onClick={() => startNewGame(GameMode.HARD)}
-                className="group relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-lg active:scale-95 transition-all shadow-xl border-b-4 border-orange-700"
-              >
-                <span className="relative z-10 uppercase">Difícil</span>
+                <i className="fa-solid fa-trophy text-xl"></i>
+                RANKING SEMANAL
               </button>
             </div>
 
-            <button
-              onClick={() => setGameState(GameState.RANKING)}
-              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-950 font-black p-5 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-yellow-700 flex items-center justify-center gap-3"
-            >
-              <i className="fa-solid fa-trophy text-xl"></i>
-              RANKING SEMANAL
-            </button>
-          </div>
-
-          <div className="mt-10 w-full max-w-sm bg-black/30 rounded-3xl p-6 border border-white/10 shadow-2xl backdrop-blur-sm">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex flex-col">
-                <h3 className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Jogador Ativo</h3>
-                <span className="font-black text-xl text-white truncate max-w-[150px]">{stats.playerName || 'DESCONHECIDO'}</span>
+            <div className="w-full bg-black/20 rounded-2xl p-4 border border-white/5 shadow-2xl backdrop-blur-sm">
+              <div className="flex justify-between items-center">
+                <div className="flex flex-col">
+                  <h3 className="text-white/40 text-[9px] font-black uppercase tracking-widest">Jogador</h3>
+                  <span className="font-black text-lg text-white truncate max-w-[140px]">{stats.playerName || '---'}</span>
+                </div>
+                <div className="text-right flex flex-col">
+                  <h3 className="text-white/40 text-[9px] font-black uppercase tracking-widest">Recorde</h3>
+                  <span className="text-2xl font-black text-orange-400">{stats.highScore}</span>
+                </div>
               </div>
-              <div className="text-right flex flex-col">
-                <h3 className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Melhor Score</h3>
-                <span className="text-3xl font-black text-orange-500 drop-shadow-sm">{stats.highScore} <span className="text-xs">PTS</span></span>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-white/5 flex flex-col items-center">
-              <span className="text-white/30 text-[10px] font-black uppercase tracking-widest mb-1">Patrimônio de XP</span>
-              <div className="flex items-center gap-2">
-                <i className="fa-solid fa-bolt text-orange-400 text-sm"></i>
-                <span className="text-2xl font-black text-white">{stats.totalXP.toLocaleString()}</span>
+              <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-center gap-2">
+                <i className="fa-solid fa-bolt text-xs text-orange-400"></i>
+                <span className="text-xs font-black text-white/50">{stats.totalXP.toLocaleString()} XP</span>
               </div>
             </div>
           </div>
@@ -356,36 +319,36 @@ const App: React.FC = () => {
 
       {/* PLAYING SCREEN */}
       {gameState === GameState.PLAYING && (
-        <div className="w-full h-full flex flex-col p-6">
+        <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
           {/* Header */}
-          <div className="flex justify-between items-center mb-4 relative">
+          <div className="flex justify-between items-center mb-2 relative">
             <div className="flex flex-col relative">
-              <span className="text-[10px] font-black opacity-40 uppercase tracking-widest">Tempo</span>
+              <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Tempo</span>
               <div className="flex items-center gap-2">
-                <span className={`text-2xl font-black tabular-nums transition-all ${timeLeft < 10 ? 'text-red-500 animate-pulse scale-110' : ''}`}>
+                <span className={`text-xl font-black tabular-nums transition-all ${timeLeft < 10 ? 'text-red-500 animate-pulse scale-110' : ''}`}>
                   {formatTime(timeLeft)}
                 </span>
                 {timeAdded && (
-                  <span className="absolute -right-8 top-4 text-green-400 font-black text-sm animate-bounce">
+                  <span className="absolute -right-8 top-4 text-green-400 font-black text-xs animate-bounce">
                     +{timeAdded}s
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="text-center bg-black/30 px-6 py-2 rounded-full border border-white/10 flex flex-col items-center">
-              <span className="text-[10px] font-black opacity-40 uppercase tracking-widest block">Nível</span>
-              <span className="text-xl font-black text-orange-400">{currentLevel}</span>
+            <div className="text-center bg-black/30 px-4 py-1 rounded-full border border-white/10 flex flex-col items-center">
+              <span className="text-[8px] font-black opacity-40 uppercase tracking-widest block">Nível</span>
+              <span className="text-lg font-black text-orange-400">{currentLevel}</span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black opacity-40 uppercase tracking-widest">Sessão XP</span>
-              <span className="text-2xl font-black tabular-nums">{sessionXP}</span>
+              <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Sessão XP</span>
+              <span className="text-xl font-black tabular-nums">{sessionXP}</span>
             </div>
           </div>
 
           {/* Barra de Progresso de Nível */}
-          <div className="w-full h-4 bg-black/40 rounded-full overflow-hidden mb-4 border border-white/10 shadow-inner relative">
+          <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-4 border border-white/10 shadow-inner relative">
             <div
               className={`h-full transition-all duration-500 ease-out flex items-center justify-end px-2
                 ${isOnFire ? 'fire-effect bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600' : 'bg-gradient-to-r from-orange-400 to-orange-600'}
@@ -397,30 +360,30 @@ const App: React.FC = () => {
               }}
             >
               {combo >= 2 && (
-                <span className="text-[8px] font-black text-white/80 whitespace-nowrap drop-shadow-md">
+                <span className="text-[6px] font-black text-white/80 whitespace-nowrap drop-shadow-md">
                   {combo} COMBO!
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center justify-center relative py-10">
-            <div className={`text-[120px] md:text-[180px] font-black tracking-tighter transition-transform duration-300 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${feedback ? 'scale-110' : 'scale-100'} ${feedback?.type === 'wrong' ? 'shake text-red-500' : 'text-white'}`}>
+          <div className="flex-1 flex flex-col items-center justify-center relative min-h-0">
+            <div className={`text-[100px] sm:text-[140px] md:text-[180px] font-black tracking-tighter transition-transform duration-300 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${feedback ? 'scale-110' : 'scale-100'} ${feedback?.type === 'wrong' ? 'shake text-red-500' : 'text-white'}`}>
               {chordsPool[currentIndex]?.symbol}
             </div>
 
-            <div className="absolute bottom-0 w-full flex items-center justify-center">
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               {feedback && (
-                <div className={`px-10 py-5 rounded-[32px] text-xl font-black uppercase tracking-widest pop-in shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col items-center border-[3px] ${feedback.type === 'correct' ? 'bg-green-500 text-white border-green-400' : 'bg-white text-red-600 border-red-200'}`}>
+                <div className={`px-8 py-4 rounded-[28px] text-lg font-black uppercase tracking-widest pop-in shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col items-center border-[3px] z-50 ${feedback.type === 'correct' ? 'bg-green-500 text-white border-green-400' : 'bg-white text-red-600 border-red-200'}`}>
                   {feedback.type === 'correct' ? (
-                    <div className="flex items-center gap-3">
-                      <i className="fa-solid fa-fire text-yellow-300 animate-bounce"></i>
+                    <div className="flex items-center gap-2">
+                      <i className="fa-solid fa-fire text-yellow-300"></i>
                       <span>PERFEITO! {combo > 1 ? `x${combo}` : ''}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center">
-                      <span className="text-[12px] opacity-60 mb-1">ERRADO! RESPOSTA:</span>
-                      <span className="text-3xl leading-none">{feedback.note}</span>
+                      <span className="text-[10px] opacity-60 mb-1">ERRADO! RESPOSTA:</span>
+                      <span className="text-2xl leading-none">{feedback.note}</span>
                     </div>
                   )}
                 </div>
@@ -429,7 +392,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Opções de Resposta */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-4">
             {currentOptions.map((opt, i) => (
               <NoteButton
                 key={`${currentIndex}-${i}-${opt}`}
@@ -439,58 +402,58 @@ const App: React.FC = () => {
               />
             ))}
           </div>
-
-          <div className="flex justify-center pb-2 h-4"></div>
         </div>
       )}
 
       {/* GAME OVER SCREEN */}
       {gameState === GameState.GAMEOVER && (
-        <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-neutral-900 pop-in overflow-y-auto text-center">
-          <div className="text-white/30 text-xs font-black uppercase tracking-[0.4em] mb-4">Sessão Finalizada</div>
-          <h2 className="text-5xl font-black mb-8 italic tracking-tighter">FIM DE <span className="text-orange-500">JOGO</span></h2>
+        <div className="w-full h-full max-h-screen flex flex-col items-center justify-between p-6 bg-neutral-900 pop-in overflow-hidden text-center pt-8 pb-8">
+          <div className="w-full">
+            <div className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Sessão Finalizada</div>
+            <h2 className="text-4xl font-black italic tracking-tighter">FIM DE <span className="text-orange-500">JOGO</span></h2>
+          </div>
 
-          <div className="w-full max-w-sm space-y-6 mb-12">
-            <div className="bg-white/5 rounded-3xl p-8 border border-white/10 text-center flex flex-col items-center gap-2 shadow-inner">
-              <span className="text-sm font-bold opacity-40 uppercase tracking-widest">Acertos na Sessão</span>
-              <span className="text-8xl font-black text-white drop-shadow-lg">{score}</span>
-              <div className="px-4 py-1 bg-orange-500/20 text-orange-500 rounded-full text-xs font-black uppercase tracking-widest mt-2 border border-orange-500/30">
-                {score >= stats.highScore ? '🔥 NOVO RECORDE 🔥' : `RECORDE ATUAL: ${stats.highScore}`}
+          <div className="w-full max-w-sm space-y-4">
+            <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-center flex flex-col items-center gap-1 shadow-inner">
+              <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Acertos na Sessão</span>
+              <span className="text-7xl font-black text-white drop-shadow-lg">{score}</span>
+              <div className="px-4 py-1 bg-orange-500/20 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-widest mt-2 border border-orange-500/30">
+                {score >= stats.highScore ? '🔥 NOVO RECORDE 🔥' : `RECORDE: ${stats.highScore}`}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-black/30 rounded-2xl p-5 text-center border border-white/5">
-                <span className="text-[10px] font-black opacity-40 block uppercase mb-1 tracking-widest">XP Ganho</span>
-                <span className="text-2xl font-black text-green-400">+{sessionXP}</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5">
+                <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">XP Ganho</span>
+                <span className="text-xl font-black text-green-400">+{sessionXP}</span>
               </div>
-              <div className="bg-black/30 rounded-2xl p-5 text-center border border-white/5">
-                <span className="text-[10px] font-black opacity-40 block uppercase mb-1 tracking-widest">Nível Final</span>
-                <span className="text-2xl font-black text-orange-400">{currentLevel}</span>
+              <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5">
+                <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Nível Final</span>
+                <span className="text-xl font-black text-orange-400">{currentLevel}</span>
               </div>
             </div>
           </div>
 
-          <div className="w-full max-w-sm space-y-4">
+          <div className="w-full max-w-sm space-y-3">
             <button
               onClick={() => startNewGame(mode)}
-              className="w-full bg-orange-500 text-white font-black p-6 rounded-2xl text-xl hover:bg-orange-600 active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700"
+              className="w-full bg-orange-500 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700 uppercase"
             >
-              JOGAR NOVAMENTE
+              Jogar Novamente
             </button>
             <button
               onClick={() => setGameState(GameState.MENU)}
-              className="w-full bg-white/10 text-white font-black p-6 rounded-2xl text-xl hover:bg-white/20 active:scale-95 transition-all border-b-4 border-white/5"
+              className="w-full bg-white/10 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all border-b-4 border-white/5 uppercase"
             >
-              VOLTAR AO MENU
+              Voltar ao Menu
             </button>
 
             <button
               onClick={() => setGameState(GameState.RANKING)}
-              className="w-full bg-yellow-500/10 text-yellow-500 p-4 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-yellow-500/20 active:scale-95 transition-all mt-4"
+              className="w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2"
             >
-              <i className="fa-solid fa-trophy mr-2"></i>
-              Ver Ranking Global
+              <i className="fa-solid fa-trophy"></i>
+              Ranking Global
             </button>
           </div>
         </div>
