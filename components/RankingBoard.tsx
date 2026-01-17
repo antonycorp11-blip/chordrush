@@ -162,6 +162,42 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
+                    {/* WEEKLY PRIZE BANNER */}
+                    <div className="relative w-full p-6 rounded-[32px] border-2 border-orange-500/30 bg-orange-500/10 overflow-hidden mb-6 group animate-in slide-in-from-top duration-500">
+                        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-transparent to-orange-500/10 active:opacity-40 transition-opacity"></div>
+                        <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all"></div>
+
+                        <div className="relative z-10 flex items-center justify-between">
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Prêmio da Semana</span>
+                                </div>
+                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">CURSO DE <span className="text-orange-500">GUITARRA</span></h3>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2">1º LUGAR NO RANKING</p>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <div className="bg-white/5 border border-white/10 px-3 py-2 rounded-2xl flex flex-col items-center min-w-[70px]">
+                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-0.5">Termina em</span>
+                                    <span className="text-sm font-black text-white tabular-nums tracking-tight">
+                                        {(() => {
+                                            const d = new Date(now);
+                                            const daysToAdd = (7 - d.getDay()) % 7;
+                                            const nextSunday = new Date(now);
+                                            nextSunday.setDate(d.getDate() + daysToAdd);
+                                            nextSunday.setHours(23, 59, 59, 999);
+                                            const diff = nextSunday.getTime() - now;
+                                            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                            return days > 0 ? `${days}d ${hours}h` : `${hours}h ${mins}m`;
+                                        })()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
                         const playerXP = entry.total_xp || entry.xp || 0; // Usar total_xp para a patente no ranking
