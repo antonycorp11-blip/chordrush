@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '3.1.0';
+      const currentVersion = '3.2.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '3.1.0');
+    localStorage.setItem('chordRush_version', '3.2.0');
     setShowChangelog(false);
   };
 
@@ -494,25 +494,25 @@ const App: React.FC = () => {
             </button>
             <div className="mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Novidades da Versão</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">NEW CARDS <span className="text-white/20">V3.1.0</span></h2>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">THE SYNTH <span className="text-white/20">V3.2.0</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-magenta-500/10 rounded-2xl flex items-center justify-center text-pink-500 border border-pink-500/20">
+                  <i className="fa-solid fa-keyboard text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo Teclado: Cyber Synth</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O novo card <b>Cyber Synth (R3)</b> chegou! Estilo retro-futurista para os mestres das teclas.</p>
+                </div>
+              </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                   <i className="fa-solid fa-guitar text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novas Artes Premium</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Liberamos o <b>Indigo Beat (C5)</b> e o <b>Neon Bass (R2)</b> com artes pixel art exclusivas!</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-                  <i className="fa-solid fa-shield-halved text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Segurança Reforçada</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Sistema anti-cheat ativo. Agora o ranking é protegido contra manipulação de XP e Score.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Coleção Expandida</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed"><b>Indigo Beat</b> e <b>Neon Bass</b> continuam disponíveis na loja premium.</p>
                 </div>
               </div>
             </div>
