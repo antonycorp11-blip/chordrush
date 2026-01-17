@@ -37,9 +37,16 @@ export const ClefOpeningModal: React.FC<ClefOpeningModalProps> = ({ reward, onCl
             <div className="relative w-full max-w-sm flex flex-col items-center justify-center text-center">
 
                 {phase === 'shaking' && (
-                    <div className={`w-48 h-48 rounded-[40px] bg-gradient-to-br ${getRarityColor(reward.rarity)} shadow-[0_0_50px_rgba(255,255,255,0.2)] flex items-center justify-center animate-bounce relative`}>
-                        <i className={`fa-solid fa-clef text-7xl text-white drop-shadow-2xl ${phase === 'shaking' ? 'animate-pulse' : ''}`}></i>
-                        <div className="absolute -bottom-12">
+                    <div className="flex flex-col items-center animate-bounce">
+                        <div className={`w-48 h-48 relative flex items-center justify-center`}>
+                            <div className={`absolute inset-0 bg-gradient-to-br ${getRarityColor(reward.rarity)} blur-2xl opacity-40 animate-pulse`} />
+                            <img
+                                src={`/assets/clefs/clef_${reward.rarity}.png`}
+                                alt="Clef"
+                                className="w-full h-full object-contain relative z-10 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+                            />
+                        </div>
+                        <div className="mt-8">
                             <span className="text-white/60 font-black uppercase tracking-[0.3em] text-[10px] animate-pulse">Abrindo Clave {reward.rarity}...</span>
                         </div>
                     </div>
@@ -52,12 +59,17 @@ export const ClefOpeningModal: React.FC<ClefOpeningModalProps> = ({ reward, onCl
                 )}
 
                 {phase === 'revealed' && (
-                    <div className="animate-in zoom-in spin-in-90 duration-700 flex flex-col items-center">
-                        <div className={`w-56 h-56 rounded-[50px] bg-gradient-to-br ${getRarityColor(reward.rarity)} shadow-[0_0_100px_rgba(255,255,255,0.1)] flex flex-col items-center justify-center relative border-4 border-white/20 mb-8`}>
+                    <div className="animate-in zoom-in spin-in-90 duration-700 flex flex-col items-center w-full">
+                        <div className={`w-64 h-64 rounded-[50px] bg-neutral-950 shadow-[0_0_100px_rgba(255,255,255,0.05)] flex flex-col items-center justify-center relative border border-white/10 mb-8 overflow-hidden`}>
+                            <div className={`absolute inset-0 bg-gradient-to-br ${getRarityColor(reward.rarity)} opacity-10`} />
+
                             {reward.type === 'acorde_coins' && (
                                 <>
-                                    <i className="fa-solid fa-coins text-6xl text-yellow-300 drop-shadow-[0_0_20px_rgba(253,224,71,0.5)] mb-4"></i>
-                                    <span className="text-4xl font-black text-white italic tracking-tighter">+{reward.amount}</span>
+                                    <div className="relative mb-4">
+                                        <div className="absolute inset-0 bg-yellow-400 blur-2xl opacity-20 animate-pulse" />
+                                        <i className="fa-solid fa-coins text-7xl text-yellow-400 drop-shadow-[0_0_20px_rgba(253,224,71,0.5)] relative z-10"></i>
+                                    </div>
+                                    <span className="text-5xl font-black text-white italic tracking-tighter">+{reward.amount?.toLocaleString()}</span>
                                     <span className="text-[10px] font-black text-white/50 uppercase tracking-widest mt-1">Acorde Coins</span>
                                 </>
                             )}

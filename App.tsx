@@ -38,6 +38,7 @@ const App: React.FC = () => {
   const [currentLevel, setCurrentLevel] = useState(1);
   const [timeLeft, setTimeLeft] = useState(60);
   const [score, setScore] = useState(0);
+  const [hits, setHits] = useState(0);
   const [sessionXP, setSessionXP] = useState(0);
   const [chordsPool, setChordsPool] = useState<Chord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -50,10 +51,11 @@ const App: React.FC = () => {
   const [showPatentsModal, setShowPatentsModal] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
-  const [dailyMission, setDailyMission] = useState<PlayerMission | null>(null);
+  const [dailyMissions, setDailyMissions] = useState<PlayerMission[]>([]);
   const [loadingMission, setLoadingMission] = useState(false);
   const [showClefOpening, setShowClefOpening] = useState(false);
   const [clefReward, setClefReward] = useState<any>(null);
+  const [activeOpeningMissionId, setActiveOpeningMissionId] = useState<string | null>(null);
   const [missionProgress, setMissionProgress] = useState({
     bemol: 0,
     sustenido: 0,
@@ -96,8 +98,8 @@ const App: React.FC = () => {
           accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
         }));
 
-        // Buscar missão diária após o sync do perfil
-        fetchDailyMission();
+        // Buscar missões diárias após o sync do perfil
+        fetchDailyMissions();
       }
       setSyncDone(true);
 
@@ -138,7 +140,7 @@ const App: React.FC = () => {
     }
   };
 
-  const fetchDailyMission = async () => {
+  const fetchDailyMissions = async () => {
     try {
       setLoadingMission(true);
       const deviceId = getDeviceId();
@@ -147,74 +149,72 @@ const App: React.FC = () => {
       });
 
       if (error) throw error;
-      if (data) setDailyMission(data);
+      if (data) setDailyMissions(data);
     } catch (err) {
-      console.error('Erro ao buscar missão:', err);
+      console.error('Erro ao buscar missões:', err);
     } finally {
       setLoadingMission(false);
     }
   };
 
   const updateMissionProgress = async () => {
-    if (!dailyMission || dailyMission.is_completed) return;
+    if (dailyMissions.length === 0) return;
 
-    let valueToAdd = 0;
-    switch (dailyMission.goal_type) {
-      case 'bemol_count': valueToAdd = missionProgress.bemol; break;
-      case 'sustenido_count': valueToAdd = missionProgress.sustenido; break;
-      case 'minor_count': valueToAdd = missionProgress.minor; break;
-      case 'max_combo': valueToAdd = missionProgress.maxCombo; break;
-      case 'session_xp': valueToAdd = sessionXP; break;
-      case 'perfect_sequence': valueToAdd = missionProgress.perfectCount; break;
-      case 'games_played': valueToAdd = 1; break;
-    }
+    for (const mission of dailyMissions) {
+      if (mission.is_completed) continue;
 
-    if (valueToAdd <= 0) return;
+      let valueToAdd = 0;
+      switch (mission.goal_type) {
+        case 'bemol_count': valueToAdd = missionProgress.bemol; break;
+        case 'sustenido_count': valueToAdd = missionProgress.sustenido; break;
+        case 'minor_count': valueToAdd = missionProgress.minor; break;
+        case 'max_combo': valueToAdd = missionProgress.maxCombo; break;
+        case 'session_xp': valueToAdd = sessionXP; break;
+        case 'perfect_sequence': valueToAdd = missionProgress.perfectCount; break;
+        case 'games_played': valueToAdd = 1; break;
+      }
 
-    try {
-      const { data, error } = await supabase
-        .from('player_missions')
-        .update({
-          current_value: dailyMission.goal_type === 'max_combo' || dailyMission.goal_type === 'perfect_sequence' || dailyMission.goal_type === 'session_xp'
-            ? Math.max(dailyMission.current_value, valueToAdd)
-            : dailyMission.current_value + valueToAdd
-        })
-        .eq('id', dailyMission.id)
-        .select()
-        .single();
+      if (valueToAdd <= 0) continue;
 
-      if (error) throw error;
+      try {
+        const targetValue = mission.goal_type === 'max_combo' || mission.goal_type === 'perfect_sequence' || mission.goal_type === 'session_xp'
+          ? Math.max(mission.current_value, valueToAdd)
+          : mission.current_value + valueToAdd;
 
-      // Checar se completou
-      if (data && data.current_value >= dailyMission.goal_value && !data.is_completed) {
-        const { data: updated } = await supabase
+        const { data, error } = await supabase
           .from('player_missions')
-          .update({ is_completed: true })
-          .eq('id', dailyMission.id)
+          .update({
+            current_value: targetValue,
+            is_completed: targetValue >= mission.goal_value
+          })
+          .eq('id', mission.id)
           .select()
           .single();
-        if (updated) setDailyMission(prev => prev ? { ...prev, ...updated } : null);
-      } else if (data) {
-        setDailyMission(prev => prev ? { ...prev, ...data } : null);
+
+        if (error) throw error;
+
+        if (data) {
+          setDailyMissions(prev => prev.map(m => m.id === data.id ? { ...m, ...data } : m));
+        }
+      } catch (err) {
+        console.error('Erro ao atualizar missão:', err);
       }
-    } catch (err) {
-      console.error('Erro ao atualizar missão:', err);
     }
   };
 
-  const openClef = async () => {
-    if (!dailyMission || !dailyMission.is_completed || dailyMission.reward_claimed) return;
-
+  const openClef = async (missionId: string) => {
     try {
       const { data, error } = await supabase.rpc('open_music_clef', {
-        p_mission_id: dailyMission.id
+        p_mission_id: missionId
       });
 
       if (error) throw error;
 
       setClefReward(data);
+      setActiveOpeningMissionId(missionId);
       setShowClefOpening(true);
-      setDailyMission(prev => prev ? { ...prev, reward_claimed: true } : null);
+
+      setDailyMissions(prev => prev.map(m => m.id === missionId ? { ...m, reward_claimed: true } : m));
 
       // Atualizar saldos localmente
       if (data.type === 'acorde_coins') {
@@ -236,6 +236,7 @@ const App: React.FC = () => {
     setCurrentLevel(1);
     setTimeLeft(60);
     setScore(0);
+    setHits(0);
     setSessionXP(0);
     setCombo(0);
     setFeedback(null);
@@ -294,7 +295,8 @@ const App: React.FC = () => {
     setStats(prev => ({
       ...prev,
       highScore: Math.max(prev.highScore, finalScore),
-      // totalXP agora é o saldo de Acorde Coins (permanece o mesmo na partida normal)
+      // Conversão de 10% do sessionXP em Acorde Coins (Saldo)
+      totalXP: prev.totalXP + Math.floor(finalXP * 0.1),
       accumulatedXP: (prev.accumulatedXP || 0) + finalXP
     }));
 
@@ -321,12 +323,15 @@ const App: React.FC = () => {
   const handleAnswer = (selectedNote: NoteName) => {
     const currentChord = chordsPool[currentIndex];
     if (selectedNote === currentChord.note) {
-      const newScore = score + 1;
+      const pointsGain = 10 * currentLevel;
+      const newScore = score + pointsGain;
+      const newHits = (prevHits: number) => prevHits + 1;
       const newCombo = combo + 1;
       const xpGain = getXPForLevel(currentLevel);
       const bonus = getTimeBonus(currentLevel);
 
       setScore(newScore);
+      setHits(prev => prev + 1);
       setCombo(newCombo);
       setSessionXP(prev => prev + xpGain);
       setFeedback({ type: 'correct', note: currentChord.note });
@@ -344,7 +349,8 @@ const App: React.FC = () => {
         maxCombo: Math.max(prev.maxCombo, newCombo)
       }));
 
-      if (newScore > 0 && newScore % 10 === 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
+      // Aumentar nível a cada 10 acertos reais
+      if ((hits + 1) % 10 === 0 && (hits + 1) > 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
     } else {
       setFeedback({ type: 'wrong', note: currentChord.note });
       setCombo(0);
@@ -553,58 +559,67 @@ const App: React.FC = () => {
                         />
                       </div>
 
-                      {/* WIDGET DE MISSÃO DIÁRIA */}
-                      <div className={`w-full rounded-2xl p-4 border transition-all duration-500 overflow-hidden relative ${dailyMission?.is_completed && !dailyMission?.reward_claimed ? 'bg-orange-600/20 border-orange-500/50' : 'bg-white/5 border-white/10'}`}>
-                        {loadingMission ? (
-                          <div className="flex items-center justify-center py-2">
-                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                          </div>
-                        ) : dailyMission ? (
-                          <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">Missão Diária</span>
-                                {dailyMission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Completa!</span>}
-                              </div>
-                              <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{dailyMission.title}</h4>
-                              <p className="text-[8px] text-white/40 font-bold leading-tight">{dailyMission.description}</p>
+                      {/* ÁREA DE MISSÕES DIÁRIAS (5 MISSÕES) */}
+                      <div className="w-full flex flex-col gap-2 mt-4">
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">Missões do Dia</span>
+                          <span className="text-[8px] font-black text-orange-500 uppercase">{dailyMissions.filter(m => m.is_completed).length} / 5</span>
+                        </div>
 
-                              <div className="mt-3 w-full h-1.5 bg-white/5 rounded-full overflow-hidden flex items-center">
-                                <div
-                                  className={`h-full transition-all duration-1000 ${dailyMission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
-                                  style={{ width: `${Math.min(100, (dailyMission.current_value / dailyMission.goal_value) * 100)}%` }}
-                                />
-                              </div>
-                              <div className="flex justify-between mt-1">
-                                <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">{dailyMission.is_completed ? 'Concluído' : 'Progresso'}</span>
-                                <span className="text-[7px] font-black text-white uppercase">{dailyMission.current_value} / {dailyMission.goal_value}</span>
-                              </div>
+                        <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto no-scrollbar pr-1 pb-2">
+                          {loadingMission ? (
+                            <div className="flex items-center justify-center py-8 bg-white/5 rounded-2xl border border-white/10">
+                              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                             </div>
+                          ) : dailyMissions.length > 0 ? (
+                            dailyMissions.map((mission) => (
+                              <div key={mission.id} className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex items-center justify-between gap-4 ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'}`}>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[7px] font-black uppercase tracking-widest ${mission.reward_rarity === 'lendário' ? 'text-yellow-400' : mission.reward_rarity === 'épico' ? 'text-purple-400' : 'text-orange-500'}`}>
+                                      {mission.reward_rarity}
+                                    </span>
+                                    {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
+                                  </div>
+                                  <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
 
-                            {dailyMission.is_completed && !dailyMission.reward_claimed ? (
-                              <button
-                                onClick={openClef}
-                                className="h-full px-4 bg-orange-500 hover:bg-orange-400 text-white font-black rounded-xl text-[9px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-lg shadow-orange-500/20"
-                              >
-                                Abrir Clave
-                              </button>
-                            ) : dailyMission.reward_claimed ? (
-                              <div className="flex flex-col items-center opacity-30">
-                                <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
-                                <span className="text-[6px] font-black uppercase mt-1">Resgatado</span>
+                                  <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
+                                      style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
+                                    />
+                                  </div>
+                                  <div className="flex justify-between mt-1">
+                                    <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
+                                      {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {mission.is_completed && !mission.reward_claimed ? (
+                                  <button
+                                    onClick={() => openClef(mission.id)}
+                                    className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
+                                  >
+                                    Abrir
+                                  </button>
+                                ) : mission.reward_claimed ? (
+                                  <div className="opacity-30">
+                                    <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
+                                    <img src={`/assets/clefs/clef_${mission.reward_rarity}.png`} className="w-full h-full object-contain" />
+                                  </div>
+                                )}
                               </div>
-                            ) : (
-                              <div className="flex flex-col items-center opacity-20">
-                                <i className={`fa-solid fa-clef text-2xl text-white`}></i>
-                                <span className="text-[6px] font-black uppercase mt-1">Ganha Clave {dailyMission.reward_rarity}</span>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-2">
-                            <p className="text-[8px] text-white/20 font-black uppercase">Nenhuma missão hoje</p>
-                          </div>
-                        )}
+                            ))
+                          ) : (
+                            <div className="text-center py-6 bg-white/5 rounded-2xl border border-white/10">
+                              <p className="text-[8px] text-white/20 font-black uppercase">Buscando missões...</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -624,6 +639,35 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="flex justify-between items-center mb-2 relative">
+              {/* Overlay de Missões (Mini) */}
+              <div className="absolute top-20 left-0 flex flex-col gap-1 w-32 pointer-events-none z-10">
+                {dailyMissions.filter(m => !m.is_completed).slice(0, 3).map(m => {
+                  let currentProgress = 0;
+                  switch (m.goal_type) {
+                    case 'bemol_count': currentProgress = missionProgress.bemol; break;
+                    case 'sustenido_count': currentProgress = missionProgress.sustenido; break;
+                    case 'minor_count': currentProgress = missionProgress.minor; break;
+                    case 'max_combo': currentProgress = missionProgress.maxCombo; break;
+                    case 'session_xp': currentProgress = sessionXP; break;
+                    case 'perfect_sequence': currentProgress = missionProgress.perfectCount; break;
+                  }
+                  return (
+                    <div key={m.id} className="bg-black/60 backdrop-blur-md p-2 rounded-lg border border-white/5 min-w-[100px]">
+                      <div className="text-[5px] font-black text-orange-500 uppercase tracking-widest truncate">{m.title}</div>
+                      <div className="flex items-center justify-between mt-1">
+                        <div className="flex-1 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-orange-500 transition-all duration-500"
+                            style={{ width: `${Math.min(100, (currentProgress / m.goal_value) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[5px] font-black text-white ml-2">{currentProgress}/{m.goal_value}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               <div className="flex flex-col relative">
                 <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Tempo</span>
                 <div className="flex items-center gap-2">
@@ -636,8 +680,8 @@ const App: React.FC = () => {
                 <span className="text-lg font-black text-orange-400">{currentLevel}</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Sessão XP</span>
-                <span className="text-xl font-black tabular-nums">{sessionXP}</span>
+                <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Ranking Pontos</span>
+                <span className="text-xl font-black tabular-nums text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.3)]">{score.toLocaleString()}</span>
               </div>
             </div>
             <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-4 border border-white/10 relative">
@@ -671,9 +715,9 @@ const App: React.FC = () => {
             </div>
             <div className="w-full max-w-sm space-y-4">
               <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-center flex flex-col items-center gap-1 shadow-inner">
-                <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Acertos na Sessão</span>
-                <span className="text-7xl font-black text-white drop-shadow-lg">{score}</span>
-                <div className="px-4 py-1 bg-orange-500/20 text-orange-500 rounded-full text-[10px] font-black uppercase tracking-widest mt-2 border border-orange-500/30"> {score >= stats.highScore ? '🔥 NOVO RECORDE 🔥' : `RECORDE: ${stats.highScore}`} </div>
+                <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Ranking Final</span>
+                <span className="text-7xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.4)]">{score.toLocaleString()}</span>
+                <div className="px-4 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-[10px] font-black uppercase tracking-widest mt-2 border border-yellow-500/30"> {score >= stats.highScore ? '🔥 NOVO RECORDE 🔥' : `RECORDE: ${stats.highScore.toLocaleString()}`} </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"> <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">XP Ganho</span> <span className="text-xl font-black text-green-400">+{sessionXP}</span> </div>
