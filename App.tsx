@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showPatentsModal, setShowPatentsModal] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,6 +113,7 @@ const App: React.FC = () => {
         .upsert({ device_id: deviceId, name: nameToSave }, { onConflict: 'device_id' })
         .select().single();
       if (error) throw error;
+      setIsRenaming(false);
       return data.id;
     } catch (err) {
       console.error('Erro ao salvar perfil:', err);
@@ -268,10 +270,12 @@ const App: React.FC = () => {
             </div>
 
             <div className="w-full space-y-4">
-              {(!stats.playerName && syncDone) ? (
+              {((!stats.playerName || stats.playerName.length <= 1 || isRenaming) && syncDone) ? (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
                   <div className="space-y-2">
-                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">Identifique-se para Jogar</p>
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">
+                      {stats.playerName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?'}
+                    </p>
                     <input
                       type="text"
                       placeholder="DIGITE SEU NOME"
@@ -279,14 +283,18 @@ const App: React.FC = () => {
                       onChange={(e) => handleNameChange(e.target.value)}
                       className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
                     />
+                    <p className="text-[9px] text-white/20 text-center uppercase font-bold">Mínimo 2 caracteres</p>
                   </div>
                   <button
-                    onClick={() => stats.playerName.trim() && savePlayerProfile()}
-                    disabled={!stats.playerName.trim()}
-                    className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
+                    onClick={() => stats.playerName.trim().length >= 2 && savePlayerProfile()}
+                    disabled={stats.playerName.trim().length < 2}
+                    className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${stats.playerName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
                   >
                     CONFIRMAR NOME
                   </button>
+                  {isRenaming && (
+                    <button onClick={() => setIsRenaming(false)} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4 w-full">
@@ -320,40 +328,51 @@ const App: React.FC = () => {
                   </button>
 
                   {syncDone && (
-                    {/* PROFILE STATUS BOX */ }
-                    < div onClick={() => setShowPatentsModal(true)} className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 cursor-pointer active:scale-[0.98] ${selectedEffectCard ? 'border-orange-500/50' : 'bg-neutral-900/80 border-white/10'}`}>
-                  {selectedEffectCard && (
-                    <>
-                      <div className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]" style={{ backgroundImage: selectedEffectCard.image }} />
-                      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-black" />
-                    </>
+                    <div onClick={() => setShowPatentsModal(true)} className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 cursor-pointer active:scale-[0.98] ${selectedEffectCard ? 'border-orange-500/50' : 'bg-neutral-900/80 border-white/10'}`}>
+                      {selectedEffectCard && (
+                        <>
+                          <div className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]" style={{ backgroundImage: selectedEffectCard.image }} />
+                          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-black" />
+                        </>
+                      )}
+                      <div className="flex flex-col relative z-10 min-w-0 flex-1">
+                        <div className={`self-start px-3 py-1 rounded-full border mb-1.5 transition-all flex items-center gap-2 ${getPlayerTitle(stats.accumulatedXP || 0).border}`}>
+                          <span className={`text-[8px] uppercase font-black tracking-widest ${getPlayerTitle(stats.accumulatedXP || 0).style}`}>
+                            {getPlayerTitle(stats.accumulatedXP || 0).title}
+                          </span>
+                        </div>
+                        <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
+                        <div className="flex items-center gap-3">
+                          <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase">
+                            {stats.playerName || '---'}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsRenaming(true);
+                            }}
+                            className="bg-white/5 hover:bg-white/10 p-2 rounded-lg text-white/40 transition-colors"
+                          >
+                            <i className="fa-solid fa-pen-to-square text-[10px]"></i>
+                          </button>
+                        </div>
+                        <div className="w-20 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
+                          <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${getNextLevelProgress(stats.accumulatedXP || 0)}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
+                        <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>
+                        <div className="flex items-center gap-2">
+                          <i className="fa-solid fa-bolt text-orange-500 text-sm"></i>
+                          <span className="text-3xl font-black text-white tabular-nums">{stats.totalXP.toLocaleString()}</span>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1 lowercase">Recorde: {stats.highScore} pts</span>
+                      </div>
+                    </div>
                   )}
-                  <div className="flex flex-col relative z-10 min-w-0 flex-1">
-                    <div className={`self-start px-3 py-1 rounded-full border mb-1.5 transition-all flex items-center gap-2 ${getPlayerTitle(stats.accumulatedXP || 0).border}`}>
-                      <span className={`text-[8px] uppercase font-black tracking-widest ${getPlayerTitle(stats.accumulatedXP || 0).style}`}>
-                        {getPlayerTitle(stats.accumulatedXP || 0).title}
-                      </span>
-                    </div>
-                    <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
-                    <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase">
-                      {stats.playerName || '---'}
-                    </span>
-                    <div className="w-20 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-                      <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${getNextLevelProgress(stats.accumulatedXP || 0)}%` }}></div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
-                    <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-bolt text-orange-500 text-sm"></i>
-                      <span className="text-3xl font-black text-white tabular-nums">{stats.totalXP.toLocaleString()}</span>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1 lowercase">Recorde: {stats.highScore} pts</span>
-                  </div>
                 </div>
               )}
             </div>
-              )}
           </div>
         </div>
       )}
