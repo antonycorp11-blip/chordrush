@@ -312,7 +312,7 @@ const App: React.FC = () => {
 
     setIsSavingScore(true);
     const deviceId = getDeviceId();
-    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v4', {
+    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v5', {
       device_id_param: deviceId,
       score_param: finalScore,
       level_param: finalLevel,
@@ -320,10 +320,13 @@ const App: React.FC = () => {
     });
 
     if (error) {
-      console.error('Erro grave ao salvar score:', error.message);
-      alert('Falha ao salvar sua pontuação. Verifique sua rede.');
+      console.error('Erro grave V5:', error.message);
+      alert('⚠️ ERRO AO SALVAR: ' + error.message);
     } else {
-      console.log('Score V4 registrado com sucesso:', saveResult);
+      console.log('Score V5 registrado:', saveResult);
+      if (saveResult?.status === 'success') {
+        alert('✅ PONTUAÇÃO REGISTRADA: ' + finalScore + ' pts');
+      }
     }
     setIsSavingScore(false);
   };
@@ -415,7 +418,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.1.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.2.0</p>
               </div>
             </div>
 
