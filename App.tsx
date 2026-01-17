@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '4.0.0';
+      const currentVersion = '4.1.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '4.0.0');
+    localStorage.setItem('chordRush_version', '4.1.0');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Início da Era Épica</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">CHORD <span className="text-orange-500">IV</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Novos Épicos</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-orange-500">V4.1.0</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                  <i className="fa-solid fa-snowflake text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo Épico: Frostbyte Bass</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O 2º card da coleção Épica chegou! O <b>Frostbyte Bass (E2)</b> é forjado em gelo eterno com raios de energia azul.</p>
+                </div>
+              </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
                   <i className="fa-solid fa-fire-amber text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Lendário: Molten Gold</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">A primeira peça da coleção Épica. A <b>Molten Gold (E1)</b> é forjada em ouro derretido e luz solar.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-400 border border-yellow-500/20">
-                  <i className="fa-solid fa-gem text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nova Categoria: Épicos</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Cards luxuosos de <b>30.000 XP</b> agora estão disponíveis. Apenas para os mestres.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Série Lendária</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">A Molten Gold ganhou um parceiro à altura. A coleção de 30k está crescendo!</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                  <i className="fa-solid fa-crown text-xl"></i>
+                  <i className="fa-solid fa-ranking-star text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Status de Elite</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Sua coleção agora suporta cards de raridade ÉPICA. Mostre seu poder no Ranking!</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Visual do Ranking</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Cards equipados agora brilham com mais intensidade no Ranking Global e Dossiê.</p>
                 </div>
               </div>
             </div>
