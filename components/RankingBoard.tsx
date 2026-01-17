@@ -15,102 +15,113 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const deviceId = getDeviceId();
 
     const fetchRanking = async () => {
-        setLoading(true);
         try {
-            // 1. Buscamos TODOS os scores recentes (top 500 para garantir cobertura)
+            // 1. Pegar os scores mais recentes e altos primeiro
             const { data: scoresData, error: sError } = await supabase
                 .from('scores')
                 .select('player_id, score, created_at')
                 .order('score', { ascending: false })
-                .limit(500);
+                .limit(200);
 
-            if (!scoresData || sError) throw sError;
+            if (sError) throw sError;
+            if (!scoresData || scoresData.length === 0) {
+                setRanking([]);
+                setLoading(false);
+                return;
+            }
 
-            // 2. Buscamos os Top 1000 jogadores por XP para garantir que pegamos as patentes reais
-            // mesmo que o XP esteja em um "perfil" diferente do score (mesmo nome)
-            const { data: allPlayers, error: pError } = await supabase
+            // 2. Extrair IDs únicos de jogadores para buscar o XP real
+            const playerIds = Array.from(new Set(scoresData.map(s => s.player_id)));
+
+            // 3. Buscar os dados desses jogadores ESPECÍFICOS (XP, Nome, etc)
+            const { data: playersData, error: pError } = await supabase
                 .from('players')
                 .select('id, device_id, name, xp, selected_card_id')
-                .order('xp', { ascending: false })
-                .limit(1000);
+                .in('id', playerIds);
 
-            if (!allPlayers || pError) throw pError;
+            if (pError) throw pError;
 
-            // Criamos um mapa de XP por NOME (para consolidar jogadores que trocaram de aparelho ou resetaram)
-            const nameToXPMap = new Map();
-            allPlayers.forEach(p => {
-                if (!p.name) return;
-                const nameKey = p.name.trim().toUpperCase();
-                const currentMaxXP = nameToXPMap.get(nameKey)?.xp || 0;
-                if (p.xp > currentMaxXP) {
-                    nameToXPMap.set(nameKey, { xp: p.xp, device_id: p.device_id, card: p.selected_card_id });
-                }
-            });
+            // Criar um mapa de ID -> Player
+            const playersMap = new Map();
+            playersData?.forEach(p => playersMap.set(p.id, p));
 
-            // Mapa de PlayerID para objeto Player (para busca rápida via score)
-            const playersById = new Map(allPlayers.map(p => [p.id, p]));
-
-            // Agrupar dados por NOME para o Ranking Final
-            const consolidatedRankingMap = new Map();
+            // 4. Consolidar por NOME para evitar duplicidade visual (mesmo nome = mesmo nível/xp)
+            // Vamos usar o maior XP encontrado para aquele nome e o melhor score
+            const consolidatedMap = new Map();
 
             scoresData.forEach(s => {
-                const player = playersById.get(s.player_id);
+                const player = playersMap.get(s.player_id);
                 if (!player || !player.name) return;
 
                 const nameKey = player.name.trim().toUpperCase();
-                const xpData = nameToXPMap.get(nameKey) || { xp: player.xp || 0, device_id: player.device_id, card: player.selected_card_id };
-
-                const existing = consolidatedRankingMap.get(nameKey);
                 const sTime = new Date(s.created_at).getTime();
+                const existing = consolidatedMap.get(nameKey);
 
                 if (!existing) {
-                    consolidatedRankingMap.set(nameKey, {
+                    consolidatedMap.set(nameKey, {
                         name: player.name,
-                        device_id: xpData.device_id,
-                        xp: xpData.xp,
-                        selected_card_id: xpData.card,
-                        score: s.score,
-                        lastPlayedAt: s.created_at,
-                        lastPlayedTime: sTime
+                        device_id: player.device_id,
+                        xp: player.xp || 0,
+                        selected_card_id: player.selected_card_id,
+                        bestScore: s.score,
+                        lastPlayedTime: sTime,
+                        lastPlayedAt: s.created_at
                     });
                 } else {
-                    // Update best score
-                    if (s.score > existing.score) {
-                        existing.score = s.score;
+                    // Se o score atual for maior, atualiza o melhor score
+                    if (s.score > existing.bestScore) {
+                        existing.bestScore = s.score;
                     }
-                    // Update last played
+                    // Se a data atual for mais recente, atualiza o último jogo
                     if (sTime > existing.lastPlayedTime) {
-                        existing.lastPlayedAt = s.created_at;
                         existing.lastPlayedTime = sTime;
+                        existing.lastPlayedAt = s.created_at;
                     }
-                    // Ensure we have the best XP found for this name
-                    existing.xp = Math.max(existing.xp, xpData.xp);
+                    // Sempre mantém o XP mais alto encontrado para esse nome
+                    existing.xp = Math.max(existing.xp, player.xp || 0);
                 }
             });
 
-            const finalRanking = Array.from(consolidatedRankingMap.values())
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 50);
+            // 5. Formatar o ranking final
+            const sortedRanking = Array.from(consolidatedMap.values())
+                .sort((a, b) => b.bestScore - a.bestScore)
+                .slice(0, 50)
+                .map(item => ({
+                    device_id: item.device_id,
+                    name: item.name,
+                    xp: item.xp,
+                    score: item.bestScore,
+                    created_at: item.lastPlayedAt,
+                    selected_card_id: item.selected_card_id
+                }));
 
-            setRanking(finalRanking as any);
+            setRanking(sortedRanking as any);
         } catch (err) {
-            console.error('Erro no ranking v2.0:', err);
+            console.error('Erro ao processar ranking:', err);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     React.useEffect(() => {
         fetchRanking();
-        const timer = setInterval(() => setNow(Date.now()), 10000);
+
+        // Aumentei a frequência do timer para 1 segundo para garantir que o relógio pareça "vivo"
+        const clockTimer = setInterval(() => {
+            setNow(Date.now());
+        }, 1000);
+
+        // Auto-refresh do ranking a cada 30 segundos
+        const refreshTimer = setInterval(fetchRanking, 30000);
 
         const channel = supabase
-            .channel('ranking_v2')
+            .channel('ranking_updates')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => fetchRanking())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => fetchRanking())
             .subscribe();
 
         return () => {
-            clearInterval(timer);
+            clearInterval(clockTimer);
+            clearInterval(refreshTimer);
             supabase.removeChannel(channel);
         };
     }, []);
@@ -118,10 +129,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
         const past = new Date(dateString).getTime();
-        const diff = Math.floor((Date.now() - past) / 1000);
+        const diff = Math.floor((now - past) / 1000);
 
-        if (diff < 20) return 'Agora';
-        if (diff < 60) return '1m';
+        if (diff < 10) return 'Agora';
+        if (diff < 60) return `${Math.max(1, diff)}s`;
         if (diff < 3600) return `${Math.floor(diff / 60)}m`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
         return `${Math.floor(diff / 86400)}d`;
@@ -135,14 +146,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">Status da Temporada v2.0</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">Atualizado em Tempo Real</span>
                 </div>
             </div>
 
             {loading && ranking.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
                     <div className="w-10 h-10 border-[3px] border-orange-500/10 border-t-orange-500 rounded-full animate-spin"></div>
-                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Sincronizando Patentes...</span>
+                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Sincronizando...</span>
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
@@ -153,7 +164,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         const progress = getNextLevelProgress(playerXP);
 
                         return (
-                            <div key={`${entry.name}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5 opacity-90'}`}>
+                            <div key={`${entry.name}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5'}`}>
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-8 flex-shrink-0 flex justify-center">
                                         {index < 3 ? (
@@ -171,14 +182,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="text-lg font-black text-white tracking-tight break-words line-clamp-1 uppercase whitespace-nowrap overflow-hidden">
+                                            <span className="text-lg font-black text-white tracking-tight break-words line-clamp-1 uppercase max-w-[150px]">
                                                 {entry.name}
                                             </span>
                                             {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">VOCÊ</span>}
                                         </div>
 
-                                        <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-                                            <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+                                        <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden flex">
+                                            <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(2, progress)}%` }}></div>
                                         </div>
                                     </div>
                                 </div>
@@ -190,6 +201,12 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             </div>
                         );
                     })}
+                    {ranking.length === 0 && !loading && (
+                        <div className="text-center py-20">
+                            <i className="fa-solid fa-ghost text-4xl text-white/5 mb-4"></i>
+                            <p className="text-white/20 font-black uppercase tracking-widest text-[10px]">Nenhum score esta semana</p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
