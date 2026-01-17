@@ -25,7 +25,7 @@ export const CARDS: ExtendedCard[] = [
     // ÉPICO - 30,000 XP
     { id: 'e1', name: 'Molten Gold', rarity: 'épico', price: 30000, image: 'url(/assets/cards/e1.png)', isReady: true },
     { id: 'e2', name: 'Frostbyte Bass', rarity: 'épico', price: 30000, image: 'url(/assets/cards/e2.png)', isReady: true },
-    { id: 'e3', name: 'Deep Nebula', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
+    { id: 'e3', name: 'Starlight Synth', rarity: 'épico', price: 30000, image: 'url(/assets/cards/e3.png)', isReady: true },
     { id: 'e4', name: 'Abyssal Key', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
 
     // LENDÁRIO - 60,000 XP
