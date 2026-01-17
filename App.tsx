@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '5.1.0';
+      const currentVersion = '5.2.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '5.1.0');
+    localStorage.setItem('chordRush_version', '5.2.0');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Gráficos de Elite</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V5.1.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Motor Gráfico V2</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V5.2.0</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-yellow-400/10 rounded-2xl flex items-center justify-center text-yellow-300 border border-yellow-400/20">
-                  <i className="fa-solid fa-bolt text-xl"></i>
+                  <i className="fa-solid fa-burst text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Raios Físicos Reais</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Substituímos os gradientes por <b>8 raios de luz físicos</b> que giram em torno do seu card lendário.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">SVG Solar Flare</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Diga adeus às linhas simples. Agora os itens lendários emitem **labaredas de luz reais** geradas via vetores de alta definição.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-white/10 rounded-2xl flex items-center justify-center text-white border border-white/20">
-                  <i className="fa-solid fa-sparkles text-xl"></i>
+                  <i className="fa-solid fa-wand-sparkles text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Brilho de Diamante</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Adicionamos <b>Estrelas Pulsantes</b> e um efeito de varredura de diamante na borda lateral.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Partículas High-Res</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">As estrelas e faíscas foram redesenhadas para serem maiores, mais brilhantes e com efeitos de animação orgânica.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-500/20">
-                  <i className="fa-solid fa-eye text-xl"></i>
+                  <i className="fa-solid fa-microchip text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Visibilidade Total</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O efeito agora transborda mas mantém a leitura do nome 100% nítida.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Otimização de Performance</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Mesmo com gráficos superiores, o efeito foi contido para não sobrecarregar o seu dispositivo.</p>
                 </div>
               </div>
             </div>

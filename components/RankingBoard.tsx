@@ -247,30 +247,41 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         }`} />
                                 )}
 
-                                {/* EFEITO LENDÁRIO: ELEMENTOS GRÁFICOS REAIS (CONTIDOS) */}
+                                {/* EFEITO LENDÁRIO: SUPERNOVA SOLAR FLARE (V5.2) */}
                                 {selectedCard?.rarity === 'lendário' && (
-                                    <div className="absolute inset-0 z-0 pointer-events-none">
-                                        {/* RAIOS DE LUZ FÍSICOS (AGORA CONTIDOS) */}
-                                        <div className="absolute inset-[-40px] z-0 animate-[spin_20s_linear_infinite] opacity-30 overflow-hidden rounded-[40px]">
-                                            {[...Array(12)].map((_, i) => (
-                                                <div
+                                    <div className="absolute inset-x-[-60px] inset-y-[-60px] z-0 pointer-events-none overflow-hidden">
+                                        {/* CAMADA 1: AURA DE CALOR PULSANTE */}
+                                        <div className="absolute inset-[60px] bg-yellow-500/20 blur-[60px] animate-pulse rounded-full" />
+
+                                        {/* CAMADA 2: RAIOS SOLARES EM SVG (GRÁFICOS REAIS) */}
+                                        <svg className="absolute inset-0 w-full h-full animate-[spin_25s_linear_infinite] opacity-40" viewBox="0 0 200 200">
+                                            <defs>
+                                                <radialGradient id="rayGradient" cx="50%" cy="50%" r="50%">
+                                                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.6" />
+                                                    <stop offset="80%" stopColor="#fbbf24" stopOpacity="0" />
+                                                </radialGradient>
+                                            </defs>
+                                            {[...Array(10)].map((_, i) => (
+                                                <path
                                                     key={i}
-                                                    className="absolute top-1/2 left-1/2 w-[200%] h-1 bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent -translate-x-1/2 -translate-y-1/2"
-                                                    style={{ transform: `translate(-50%, -50%) rotate(${i * 30}deg)` }}
+                                                    d="M100,100 L120,20 L80,20 Z"
+                                                    fill="url(#rayGradient)"
+                                                    transform={`rotate(${i * 36} 100 100)`}
+                                                    className="animate-pulse"
                                                 />
                                             ))}
-                                        </div>
+                                        </svg>
 
-                                        {/* ESTRELAS/BRILHOS REAIS (MAIS VISÍVEIS) */}
-                                        <div className="absolute inset-0 z-30">
-                                            <div className="absolute top-[15%] right-[20%] animate-bounce">
-                                                <i className="fa-solid fa-sparkles text-[14px] text-yellow-200 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"></i>
+                                        {/* CAMADA 3: PARTÍCULAS DE ESTRELAS/DIAMANTE */}
+                                        <div className="absolute inset-[60px] z-30">
+                                            <div className="absolute top-[10%] right-[15%] animate-[bounce_3s_infinite]">
+                                                <i className="fa-solid fa-sparkles text-[16px] text-yellow-200 drop-shadow-[0_0_12px_rgba(255,255,255,1)]"></i>
                                             </div>
-                                            <div className="absolute bottom-[20%] left-[35%] animate-pulse pb-1" style={{ animationDelay: '1.2s' }}>
-                                                <i className="fa-solid fa-star text-[10px] text-white drop-shadow-[0_0_8px_rgba(255,255,255,1)]"></i>
+                                            <div className="absolute bottom-[20%] left-[25%] animate-[ping_4s_infinite]">
+                                                <i className="fa-solid fa-star text-[12px] text-white drop-shadow-[0_0_15px_rgba(255,255,255,1)]"></i>
                                             </div>
-                                            <div className="absolute top-[40%] left-[45%] animate-ping opacity-80" style={{ animationDelay: '0.7s' }}>
-                                                <i className="fa-solid fa-star text-[12px] text-yellow-300 drop-shadow-[0_0_6px_rgba(250,204,21,1)]"></i>
+                                            <div className="absolute top-[45%] right-[25%] animate-pulse pb-1">
+                                                <i className="fa-solid fa-sparkle text-[10px] text-yellow-400 drop-shadow-[0_0_8px_rgba(251,191,36,1)]"></i>
                                             </div>
                                         </div>
                                     </div>
