@@ -12,15 +12,15 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const [ranking, setRanking] = React.useState<RankingEntry[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [now, setNow] = React.useState(Date.now());
+    const [drift, setDrift] = React.useState(0);
     const deviceId = getDeviceId();
 
     const fetchRanking = async () => {
         try {
-            // 1. Pegar os scores mais recentes e altos primeiro
             const { data: scoresData, error: sError } = await supabase
                 .from('scores')
                 .select('player_id, score, created_at')
-                .order('score', { ascending: false })
+                .order('created_at', { ascending: false }) // Pegamos o mais recente primeiro para calibrar
                 .limit(200);
 
             if (sError) throw sError;
@@ -30,10 +30,20 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 return;
             }
 
-            // 2. Extrair IDs únicos de jogadores para buscar o XP real
-            const playerIds = Array.from(new Set(scoresData.map(s => s.player_id)));
+            // CALIBRAÇÃO DO RELÓGIO:
+            // Pegamos o registro mais recente do servidor e comparamos com o relógio local.
+            // Se o servidor diz que foi "agora" mas nosso relógio diz que foi 25 min atrás, 
+            // salvamos esse 'drift' para descontar em todos os outros.
+            const serverLatest = new Date(scoresData[0].created_at).getTime();
+            const localNow = Date.now();
+            const currentDrift = localNow - serverLatest;
+            setDrift(currentDrift);
 
-            // 3. Buscar os dados desses jogadores ESPECÍFICOS (XP, Nome, etc)
+            // Re-order por score para o ranking
+            const sortedByScore = [...scoresData].sort((a, b) => b.score - a.score);
+
+            const playerIds = Array.from(new Set(sortedByScore.map(s => s.player_id)));
+
             const { data: playersData, error: pError } = await supabase
                 .from('players')
                 .select('id, device_id, name, xp, selected_card_id')
@@ -41,15 +51,11 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
             if (pError) throw pError;
 
-            // Criar um mapa de ID -> Player
             const playersMap = new Map();
             playersData?.forEach(p => playersMap.set(p.id, p));
 
-            // 4. Consolidar por NOME para evitar duplicidade visual (mesmo nome = mesmo nível/xp)
-            // Vamos usar o maior XP encontrado para aquele nome e o melhor score
             const consolidatedMap = new Map();
-
-            scoresData.forEach(s => {
+            sortedByScore.forEach(s => {
                 const player = playersMap.get(s.player_id);
                 if (!player || !player.name) return;
 
@@ -68,22 +74,16 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         lastPlayedAt: s.created_at
                     });
                 } else {
-                    // Se o score atual for maior, atualiza o melhor score
-                    if (s.score > existing.bestScore) {
-                        existing.bestScore = s.score;
-                    }
-                    // Se a data atual for mais recente, atualiza o último jogo
+                    if (s.score > existing.bestScore) existing.bestScore = s.score;
                     if (sTime > existing.lastPlayedTime) {
                         existing.lastPlayedTime = sTime;
                         existing.lastPlayedAt = s.created_at;
                     }
-                    // Sempre mantém o XP mais alto encontrado para esse nome
                     existing.xp = Math.max(existing.xp, player.xp || 0);
                 }
             });
 
-            // 5. Formatar o ranking final
-            const sortedRanking = Array.from(consolidatedMap.values())
+            const finalRanking = Array.from(consolidatedMap.values())
                 .sort((a, b) => b.bestScore - a.bestScore)
                 .slice(0, 50)
                 .map(item => ({
@@ -95,7 +95,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     selected_card_id: item.selected_card_id
                 }));
 
-            setRanking(sortedRanking as any);
+            setRanking(finalRanking as any);
         } catch (err) {
             console.error('Erro ao processar ranking:', err);
         } finally {
@@ -105,13 +105,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     React.useEffect(() => {
         fetchRanking();
-
-        // Aumentei a frequência do timer para 1 segundo para garantir que o relógio pareça "vivo"
-        const clockTimer = setInterval(() => {
-            setNow(Date.now());
-        }, 1000);
-
-        // Auto-refresh do ranking a cada 30 segundos
+        const clockTimer = setInterval(() => setNow(Date.now()), 1000);
         const refreshTimer = setInterval(fetchRanking, 30000);
 
         const channel = supabase
@@ -129,10 +123,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
         const past = new Date(dateString).getTime();
-        const diff = Math.floor((now - past) / 1000);
 
-        if (diff < 10) return 'Agora';
-        if (diff < 60) return `${Math.max(1, diff)}s`;
+        // Aplicamos o DRIFT para normalizar o relógio do servidor com o do celular
+        const adjustedNow = now - drift;
+        const diff = Math.floor((adjustedNow - past) / 1000);
+
+        if (diff < 30) return 'Agora';
+        if (diff < 60) return `${diff}s`;
         if (diff < 3600) return `${Math.floor(diff / 60)}m`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
         return `${Math.floor(diff / 86400)}d`;
@@ -146,7 +143,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">Atualizado em Tempo Real</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V2.3.0 • Auto-Calibrado</span>
                 </div>
             </div>
 
@@ -201,12 +198,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             </div>
                         );
                     })}
-                    {ranking.length === 0 && !loading && (
-                        <div className="text-center py-20">
-                            <i className="fa-solid fa-ghost text-4xl text-white/5 mb-4"></i>
-                            <p className="text-white/20 font-black uppercase tracking-widest text-[10px]">Nenhum score esta semana</p>
-                        </div>
-                    )}
                 </div>
             )}
         </div>
