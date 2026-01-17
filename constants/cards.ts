@@ -18,7 +18,7 @@ export const CARDS: ExtendedCard[] = [
     { id: 'r1', name: 'Thunder Axe', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r1.png)', isReady: true },
     { id: 'r2', name: 'Neon Bass', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r2.png)', isReady: true },
     { id: 'r3', name: 'Cyber Synth', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r3.png)', isReady: true },
-    { id: 'r4', name: 'Vulcan Flare', rarity: 'raro', price: 10000, image: 'url(/assets/cards/rare.png)', isReady: false },
+    { id: 'r4', name: 'Volt Drums', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r4.png)', isReady: true },
     { id: 'r5', name: 'Acid Green', rarity: 'raro', price: 10000, image: 'url(/assets/cards/rare.png)', isReady: false },
     { id: 'r6', name: 'Vortex Violet', rarity: 'raro', price: 10000, image: 'url(/assets/cards/rare.png)', isReady: false },
 
