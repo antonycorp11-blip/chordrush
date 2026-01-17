@@ -45,6 +45,7 @@ const App: React.FC = () => {
   const [timeAdded, setTimeAdded] = useState<number | null>(null);
   const [combo, setCombo] = useState(0);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showPatentsModal, setShowPatentsModal] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,7 +82,7 @@ const App: React.FC = () => {
       }
 
       // Check Version for Changelog
-      const currentVersion = '2.8.0';
+      const currentVersion = '2.9.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -91,7 +92,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '2.8.0');
+    localStorage.setItem('chordRush_version', '2.9.0');
     setShowChangelog(false);
   };
 
@@ -251,7 +252,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.8.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.9.0</p>
               </div>
             </div>
 
@@ -318,11 +319,15 @@ const App: React.FC = () => {
                     </>
                   )}
                   <div className="flex flex-col relative z-10 min-w-0 flex-1">
-                    <div className={`self-start px-2 py-0.5 rounded-full border mb-1 ${title.border}`}>
-                      <span className={`text-[7px] uppercase font-black tracking-widest ${title.style}`}>
+                    <button
+                      onClick={() => setShowPatentsModal(true)}
+                      className={`self-start px-3 py-1 rounded-full border mb-1.5 transition-all active:scale-95 flex items-center gap-2 group/btn ${title.border}`}
+                    >
+                      <span className={`text-[8px] uppercase font-black tracking-widest ${title.style}`}>
                         {title.title}
                       </span>
-                    </div>
+                      <i className={`fa-solid fa-circle-info text-[8px] opacity-20 group-hover/btn:opacity-50 ${title.style}`}></i>
+                    </button>
                     <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
                     <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase">
                       {stats.playerName || '---'}
@@ -448,7 +453,7 @@ const App: React.FC = () => {
 
             <div className="mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">STABLE STORE <span className="text-white/20">V2.8.0</span></h2>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">PROGRESSÃO <span className="text-white/20">V2.9.0</span></h2>
             </div>
 
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
@@ -498,6 +503,52 @@ const App: React.FC = () => {
               className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"
             >
               VAMOS JOGAR!
+            </button>
+          </div>
+        </div>
+      )}
+      {/* PATENTS MODAL */}
+      {showPatentsModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in zoom-in duration-300 shadow-2xl">
+          <div className="w-full max-w-sm bg-neutral-900 border-2 border-white/10 rounded-[40px] p-8 relative shadow-2xl overflow-hidden">
+            <button
+              onClick={() => setShowPatentsModal(false)}
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors"
+            >
+              <i className="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div className="mb-8 text-center sm:text-left">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Hierarquia Musical</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">PATENTES</h2>
+              <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-2 px-1">Seu XP Total desbloqueia novos títulos</p>
+            </div>
+
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
+              {[
+                { name: 'Iniciante', xp: 0, style: 'text-white/40', bg: 'bg-white/5' },
+                { name: 'Estudante', xp: 5000, style: 'text-orange-400', bg: 'bg-orange-400/10' },
+                { name: 'Avançado', xp: 15000, style: 'text-blue-400', bg: 'bg-blue-400/10' },
+                { name: 'Solista', xp: 30000, style: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+                { name: 'Virtuoso', xp: 50000, style: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+                { name: 'Mestre', xp: 75000, style: 'text-purple-400', bg: 'bg-purple-400/10' },
+                { name: 'Lenda', xp: 100000, style: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+              ].map((p, i) => (
+                <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border border-white/5 ${p.bg}`}>
+                  <span className={`font-black uppercase tracking-widest text-[11px] ${p.style}`}>{p.name}</span>
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-bolt text-[10px] text-orange-500 opacity-50"></i>
+                    <span className="text-white font-black tabular-nums text-xs">{p.xp.toLocaleString()} <span className="text-[8px] opacity-30">XP</span></span>
+                  </div>
+                </div>
+              )).reverse()}
+            </div>
+
+            <button
+              onClick={() => setShowPatentsModal(false)}
+              className="w-full mt-8 bg-orange-500 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-95 transition-all shadow-xl"
+            >
+              FECHAR LISTA
             </button>
           </div>
         </div>
