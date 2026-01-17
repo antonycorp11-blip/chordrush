@@ -16,52 +16,63 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const fetchRanking = async () => {
         setLoading(true);
-        // Primeiro, pegamos todos os jogadores e seus XPs
-        const { data: playersData } = await supabase
-            .from('players')
-            .select('device_id, name, xp, id, selected_card_id');
+        try {
+            // Buscamos os scores com os dados dos players inclusos
+            const { data, error } = await supabase
+                .from('scores')
+                .select(`
+                    score,
+                    created_at,
+                    level,
+                    players (
+                        device_id,
+                        name,
+                        xp,
+                        selected_card_id
+                    )
+                `)
+                .order('score', { ascending: false });
 
-        // Depois pegamos o melhor score de cada um
-        const { data: scoresData } = await supabase
-            .from('scores')
-            .select('player_id, score, created_at, level')
-            .order('score', { ascending: false });
+            if (data && !error) {
+                // Eliminar duplicidade por DEVICE_ID (garante que cada jogador/celular apareça só uma vez)
+                const uniquePlayersMap = new Map();
 
-        if (playersData && scoresData) {
-            // Criar mapa do melhor score por player
-            const bestScores = new Map();
-            scoresData.forEach(s => {
-                if (!bestScores.has(s.player_id)) {
-                    bestScores.set(s.player_id, s);
-                }
-            });
+                data.forEach(item => {
+                    const p = item.players as any;
+                    if (!p) return;
 
-            const formatted = playersData
-                .map(p => {
-                    const best = bestScores.get(p.id);
-                    if (!best) return null;
-                    return {
-                        device_id: p.device_id,
-                        name: p.name,
-                        xp: p.xp || 0,
-                        selected_card_id: p.selected_card_id,
-                        score: best.score,
-                        created_at: best.created_at,
-                        level: best.level
-                    };
-                })
-                .filter(Boolean)
-                .sort((a, b) => (b?.score || 0) - (a?.score || 0))
-                .slice(0, 50);
+                    const id = p.device_id;
+                    const existing = uniquePlayersMap.get(id);
 
-            setRanking(formatted as any);
+                    // Se não existe ou se o score atual é maior que o já salvo
+                    if (!existing || item.score > existing.score) {
+                        uniquePlayersMap.set(id, {
+                            score: item.score,
+                            created_at: item.created_at,
+                            level: item.level,
+                            device_id: p.device_id,
+                            name: p.name,
+                            xp: p.xp || 0,
+                            selected_card_id: p.selected_card_id
+                        });
+                    }
+                });
+
+                const formatted = Array.from(uniquePlayersMap.values())
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 50);
+
+                setRanking(formatted as any);
+            }
+        } catch (err) {
+            console.error('Erro no ranking:', err);
         }
         setLoading(false);
     };
 
     React.useEffect(() => {
         fetchRanking();
-        const timer = setInterval(() => setNow(Date.now()), 10000);
+        const timer = setInterval(() => setNow(Date.now()), 15000);
 
         const channel = supabase
             .channel('ranking_live')
@@ -77,9 +88,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
-        const past = new Date(dateString).getTime();
-        const diff = Math.floor((now - past) / 1000);
 
+        // Fix para garantir que o JS interprete como UTC se não houver fuso
+        const fixedDateStr = dateString.includes('Z') || dateString.includes('+') ? dateString : dateString.replace(' ', 'T') + 'Z';
+        const past = new Date(fixedDateStr).getTime();
+        const diff = Math.floor((Date.now() - past) / 1000);
+
+        if (diff < 0) return 'Agora'; // Evita tempos negativos se o relógio local estiver atrasado
         if (diff < 60) return 'Agora';
         if (diff < 3600) return `${Math.floor(diff / 60)}m`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
@@ -98,7 +113,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </div>
             </div>
 
-            {loading ? (
+            {loading && ranking.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
                     <div className="w-10 h-10 border-[3px] border-orange-500/10 border-t-orange-500 rounded-full animate-spin"></div>
                     <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Calculando...</span>
@@ -112,7 +127,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         const progress = getNextLevelProgress(playerXP);
 
                         return (
-                            <div key={index} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5 opacity-90'}`}>
+                            <div key={`${entry.device_id}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5 opacity-90'}`}>
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-8 flex-shrink-0 flex justify-center">
                                         {index < 3 ? (
