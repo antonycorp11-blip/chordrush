@@ -224,13 +224,20 @@ const App: React.FC = () => {
         <div className="w-full h-full max-h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative bg-[#0a0a0a]">
           <div className="w-full max-w-sm flex flex-col items-center gap-6 z-10">
             <div className="text-center">
-              <img src="/school_logo.png" alt="School Logo" className="h-16 mb-4 mx-auto drop-shadow-lg opacity-80" />
+              <div className="h-20 mb-4 flex items-center justify-center">
+                <img
+                  src="school_logo.png"
+                  alt="Escola Logo"
+                  className="max-h-full w-auto drop-shadow-xl"
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              </div>
               <h1 className="text-6xl sm:text-8xl font-black tracking-tighter italic leading-none block">
                 CHORD<span className="text-orange-500">RUSH</span>
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.2.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.3.0</p>
               </div>
             </div>
 
@@ -273,17 +280,16 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* BOX DE JOGADOR - REFLETE O CARD EQUIPADO (TEMPORARIAMENTE ESCONDIDO PARA EVITAR SPOILERS) */}
+            {/* BOX DE JOGADOR - LIMPO SEM SPOILERS */}
             <div
-              className="w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 bg-black/40 border-white/10"
+              className="w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 bg-neutral-900/80 border-white/10"
             >
-
               <div className="flex flex-col relative z-10 min-w-0 flex-1">
                 <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
-                <span className="font-black text-2xl text-white tracking-tight break-words pr-2">
+                <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1">
                   {stats.playerName || '---'}
                 </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Rec: {stats.highScore}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/50 lowercase">Recorde: {stats.highScore} pts</span>
               </div>
               <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
                 <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>

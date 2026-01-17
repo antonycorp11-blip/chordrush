@@ -76,22 +76,21 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             <div
                                 key={index}
                                 className={`
-                                    relative flex items-center justify-between p-6 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
-                                    ${isMe ? 'scale-[1.02] z-20 ring-4 ring-orange-500/20 bg-orange-600/20 border-orange-500/50' : 'scale-100 bg-white/5 border-white/10'}
+                                    relative flex items-center justify-between p-6 rounded-[32px] border-2 transition-all duration-300 overflow-hidden
+                                    ${isMe ? 'bg-neutral-800 border-orange-500 shadow-lg scale-[1.02] z-10' : 'bg-neutral-900/50 border-white/5 opacity-80'}
                                 `}
                             >
-
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-10 flex-shrink-0 flex justify-center">
                                         {isTop3 ? <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i> : <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <span className={`text-xl break-words pr-2 ${getNameFontStyle(undefined)}`}>
+                                        <span className="text-xl font-black text-white tracking-tight break-words pr-2">
                                             {entry.name}
                                         </span>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
-                                            {isMe && <span className="text-[9px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black uppercase tracking-tighter">Você</span>}
+                                            {isMe && <span className="text-[9px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black uppercase tracking-tighter shadow-sm">Você</span>}
                                         </div>
                                     </div>
                                 </div>
@@ -100,9 +99,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                     <div className="text-3xl font-black text-white italic tracking-tighter leading-none"> {entry.score.toLocaleString()} </div>
                                     <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Pontos</span>
                                 </div>
-
-                                {/* Pulse Effect for Current Player */}
-                                {isMe && <div className="absolute inset-0 border-2 border-orange-500/30 rounded-[30px] animate-pulse pointer-events-none"></div>}
                             </div>
                         );
                     })}
