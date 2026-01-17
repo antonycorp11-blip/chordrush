@@ -66,8 +66,8 @@ export const CardStore: React.FC<CardStoreProps> = ({
         try {
             const deviceId = getDeviceId();
 
-            // Usamos a função RPC segura para que o Matheus não mude o preço no console
-            const { error: buyError } = await supabase.rpc('purchase_card', {
+            // Usamos a função RPC segura (V5) para transação atômica
+            const { data, error: buyError } = await supabase.rpc('purchase_card', {
                 device_id_param: deviceId,
                 card_id_param: card.id,
                 card_price_param: card.price
@@ -75,13 +75,18 @@ export const CardStore: React.FC<CardStoreProps> = ({
 
             if (buyError) throw buyError;
 
-            // Atualiza o saldo localmente para refletir a compra
-            onXPUpdate(acordeCoins - card.price);
-            setOwnedCards(prev => [...prev, card.id]);
-            alert(`Card "${card.name}" adquirido com sucesso!`);
+            if (data?.success) {
+                // Sincroniza o saldo com o que o banco disse que sobrou
+                const finalBalance = data.new_balance !== undefined ? data.new_balance : (acordeCoins - card.price);
+                onXPUpdate(finalBalance);
+                setOwnedCards(prev => [...prev, card.id]);
+                alert(`✅ Card "${card.name}" adquirido com sucesso!`);
+            } else {
+                alert(`❌ Erro: ${data?.message || 'Falha na compra'}`);
+            }
         } catch (err: any) {
-            console.error('Error buying card (Security):', err);
-            alert('Erro na compra: ' + err.message);
+            console.error('Error buying card (Atomic):', err);
+            alert('Erro crítico na conexão: ' + err.message);
         }
     };
 

@@ -110,7 +110,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.2.5';
+      const currentVersion = '7.3.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -120,7 +120,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.2.5');
+    localStorage.setItem('chordRush_version', '7.3.0');
     setShowChangelog(false);
   };
 
@@ -418,7 +418,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.2.5</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.3.0</p>
               </div>
             </div>
 
@@ -813,39 +813,39 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>
               <div className="mb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Nova Temporada</span>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.2.5</span></h2>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Experiência Imersiva</span>
+                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.3.0</span></h2>
               </div>
               <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-yellow-400/10 rounded-2xl flex items-center justify-center text-yellow-300 border border-yellow-400/20">
-                    <i className="fa-solid fa-trophy text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                    <i className="fa-solid fa-shield-halved text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ranking Blindado</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Implementamos o motor **V5.1** no servidor. Agora, todos os seus recordes são validados e salvos instantaneamente, sem risco de perda ou erro de conexão.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Transação Blindada</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Fixamos o erro de sincronização na Loja. Agora, compra de cards e saldo de Acorde Coins são processados em uma única operação segura.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 border border-red-500/20">
-                    <i className="fa-solid fa-rotate text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
+                    <i className="fa-solid fa-mobile-screen-button text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Reset Técnico</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Para estabilizar o novo sistema, zeramos o Ranking Semanal. **Sua coleção de cards, títulos e moedas não foram tocados.** É hora de conquistar o topo de novo!</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ícone no Celular</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Agora o ChordRush tem um ícone premium! Salve o app na tela inicial do seu celular para uma experiência de jogo em tela cheia (PWA).</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-500 border border-green-500/20">
-                    <i className="fa-solid fa-check-double text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                    <i className="fa-solid fa-coins text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Feedback em Tempo Real</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Ao terminar uma partida, você receberá uma confirmação visual de que seu score foi registrado com sucesso na nuvem.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Saldo Protegido</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Melhoramos o servidor para garantir que seu saldo nunca mais "resete" ao fechar e abrir o aplicativo.</p>
                   </div>
                 </div>
               </div>
-              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">BORA PRO TOPO!</button>
+              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">VAMOS NESSA!</button>
             </div>
           </div>
         )
