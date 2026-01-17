@@ -81,7 +81,7 @@ const App: React.FC = () => {
       }
 
       // Check Version for Changelog
-      const currentVersion = '2.7.0';
+      const currentVersion = '2.8.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -91,7 +91,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '2.7.0');
+    localStorage.setItem('chordRush_version', '2.8.0');
     setShowChangelog(false);
   };
 
@@ -251,7 +251,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.7.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.8.0</p>
               </div>
             </div>
 
@@ -448,7 +448,7 @@ const App: React.FC = () => {
 
             <div className="mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">SYNC FIX <span className="text-white/20">V2.7.0</span></h2>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">STABLE STORE <span className="text-white/20">V2.8.0</span></h2>
             </div>
 
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
@@ -493,20 +493,12 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex gap-2 mt-8">
-              <button
-                onClick={closeChangelog}
-                className="flex-1 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"
-              >
-                ENTENDI, VAMOS JOGAR!
-              </button>
-              <button
-                onClick={() => window.location.reload()}
-                className="w-16 bg-white/5 border-2 border-white/10 text-white flex items-center justify-center rounded-2xl active:scale-95"
-              >
-                <i className="fa-solid fa-rotate"></i>
-              </button>
-            </div>
+            <button
+              onClick={closeChangelog}
+              className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"
+            >
+              VAMOS JOGAR!
+            </button>
           </div>
         </div>
       )}
