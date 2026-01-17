@@ -44,6 +44,7 @@ const App: React.FC = () => {
   const [lastSessionFirstChord, setLastSessionFirstChord] = useState<string | null>(null);
   const [timeAdded, setTimeAdded] = useState<number | null>(null);
   const [combo, setCombo] = useState(0);
+  const [showChangelog, setShowChangelog] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -78,9 +79,21 @@ const App: React.FC = () => {
           totalXP: data.xp || prev.totalXP
         }));
       }
+
+      // Check Version for Changelog
+      const currentVersion = '2.6.0';
+      const lastSeen = localStorage.getItem('chordRush_version');
+      if (lastSeen !== currentVersion) {
+        setShowChangelog(true);
+      }
     };
     syncProfile();
   }, []);
+
+  const closeChangelog = () => {
+    localStorage.setItem('chordRush_version', '2.6.0');
+    setShowChangelog(false);
+  };
 
   const handleNameChange = (name: string) => {
     setStats(prev => ({ ...prev, playerName: name.toUpperCase() }));
@@ -238,7 +251,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.5.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.6.0</p>
               </div>
             </div>
 
@@ -419,6 +432,75 @@ const App: React.FC = () => {
           selectedCardId={stats.selectedCardId}
           onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
         />
+      )}
+      {/* CHANGELOG MODAL */}
+      {showChangelog && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="w-full max-w-md bg-neutral-900 border-2 border-orange-500/30 rounded-[40px] p-8 relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-yellow-500"></div>
+
+            <button
+              onClick={closeChangelog}
+              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors"
+            >
+              <i className="fa-solid fa-xmark text-xl"></i>
+            </button>
+
+            <div className="mb-8">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">PATCH NOTES <span className="text-white/20">V2.6.0</span></h2>
+            </div>
+
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                  <i className="fa-solid fa-medal text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novas Patentes</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Sistema de títulos musicais (Iniciante, Solista, Mestre...) baseado no seu XP. Confira sua barra de progresso no menu!</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
+                  <i className="fa-solid fa-cart-shopping text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Loja de Cards</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Use seu XP para desbloquear estilos visuais exclusivos. Equipar um card muda seu visual no Ranking Mundial!</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-400 border border-green-500/20">
+                  <i className="fa-solid fa-clock-rotate-left text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Relógio Calibrado</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O tempo das partidas no ranking agora é sincronizado com o servidor. 100% preciso para todos!</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
+                  <i className="fa-solid fa-palette text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Pixel Art Em Breve</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Artes Ultra Premium estão em fase final de desenho. Cards em produção agora possuem selo de destaque.</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={closeChangelog}
+              className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-md uppercase tracking-widest active:scale-95 transition-all shadow-xl"
+            >
+              ENTENDI, VAMOS JOGAR!
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

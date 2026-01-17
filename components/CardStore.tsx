@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, getDeviceId } from '../utils/supabaseClient';
 import { Card, Rarity } from '../types';
-import { CARDS } from '../constants/cards';
+import { CARDS, ExtendedCard } from '../constants/cards';
 
 interface CardStoreProps {
     onBack: () => void;
@@ -53,8 +53,10 @@ export const CardStore: React.FC<CardStoreProps> = ({
         }
     };
 
-    const buyCard = async (card: Card) => {
+    const buyCard = async (card: ExtendedCard) => {
+        if (!card.isReady) return; // Não dá pra comprar o que não está pronto
         if (card.price > 0 && totalXP < card.price) return;
+
         try {
             const deviceId = getDeviceId();
             const { data: playerData } = await supabase
@@ -162,14 +164,21 @@ export const CardStore: React.FC<CardStoreProps> = ({
                         {filteredCards.map(card => {
                             const isOwned = ownedCards.includes(card.id);
                             const isSelected = selectedCardId === card.id;
+                            const isReady = card.isReady;
                             const styles = getRarityStyles(card.rarity);
+                            const canAfford = totalXP >= card.price;
 
                             return (
                                 <div
                                     key={card.id}
-                                    onClick={() => isOwned ? selectCard(card.id) : buyCard(card)}
+                                    onClick={() => {
+                                        if (!isReady) return;
+                                        if (isOwned) selectCard(card.id);
+                                        else buyCard(card);
+                                    }}
                                     className={`
-                                        relative w-full p-6 rounded-[32px] border-2 transition-all duration-300 cursor-pointer overflow-hidden
+                                        relative w-full p-6 rounded-[32px] border-2 transition-all duration-300 overflow-hidden
+                                        ${isReady ? 'cursor-pointer' : 'cursor-not-allowed opacity-80'}
                                         ${isSelected ? 'scale-[1.03] z-10 ring-4 ring-orange-500/20' : 'scale-100'}
                                         ${styles.border}
                                     `}
@@ -179,27 +188,38 @@ export const CardStore: React.FC<CardStoreProps> = ({
                                         backgroundPosition: 'center'
                                     }}
                                 >
-                                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]"></div>
+                                    <div className="absolute inset-0 bg-black/50 backdrop-blur-[0.5px]"></div>
+
+                                    {/* SOBREPOSIÇÃO PARA CARDS EM DESENVOLVIMENTO */}
+                                    {!isReady && (
+                                        <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4">
+                                            <div className="bg-orange-500 text-white font-black text-[9px] px-3 py-1 rounded-full uppercase tracking-widest mb-2 shadow-lg">
+                                                Em Desenvolvimento
+                                            </div>
+                                            <span className="text-white font-black text-xl italic uppercase tracking-tighter opacity-40">Em Breve</span>
+                                        </div>
+                                    )}
 
                                     <div className="relative z-10 flex items-center justify-between">
                                         <div className="flex flex-col">
                                             <span className={`${styles.color} font-black uppercase text-[10px] tracking-widest mb-1`}>
                                                 {card.rarity}
                                             </span>
-                                            <h3 className="text-white font-black text-2xl uppercase tracking-tighter italic italic">
+                                            <h3 className="text-white font-black text-2xl uppercase tracking-tighter italic">
                                                 {card.name}
                                             </h3>
                                         </div>
 
                                         <div className="flex flex-col items-end">
                                             {!isOwned ? (
-                                                <div className="bg-white text-black px-5 py-2 rounded-2xl font-black text-xs shadow-xl uppercase animate-pulse">
-                                                    Gratis
+                                                <div className={`px-4 py-2 rounded-2xl font-black text-xs shadow-xl uppercase transition-all flex items-center gap-2 ${canAfford ? 'bg-white text-black active:scale-95' : 'bg-white/10 text-white/20 border border-white/10'}`}>
+                                                    <i className="fa-solid fa-bolt text-[10px]"></i>
+                                                    {card.price.toLocaleString()}
                                                 </div>
                                             ) : (
                                                 <div className={`
                                                     w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all
-                                                    ${isSelected ? 'bg-orange-500 border-white text-white' : 'bg-black/40 border-white/20 text-white/40'}
+                                                    ${isSelected ? 'bg-orange-500 border-white text-white shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'bg-black/40 border-white/20 text-white/40'}
                                                 `}>
                                                     <i className={`fa-solid ${isSelected ? 'fa-check text-xl' : 'fa-hand-pointer'}`}></i>
                                                 </div>
@@ -207,7 +227,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
                                         </div>
                                     </div>
 
-                                    {isSelected && (
+                                    {isSelected && isReady && (
                                         <div className="absolute inset-0 border-2 border-white/30 rounded-[30px] animate-pulse"></div>
                                     )}
                                 </div>
