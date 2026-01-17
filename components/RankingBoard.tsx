@@ -247,33 +247,23 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         }`} />
                                 )}
 
-                                {/* EFEITO LENDÁRIO: CINEMATIC OVERLAY (V6.0) */}
+                                {/* EFEITO LENDÁRIO: CINEMATIC BACKLIGHT (V6.1) */}
                                 {selectedCard?.rarity === 'lendário' && (
                                     <>
-                                        {/* 1. AURA DE FUNDO (ATRÁS) */}
-                                        <div className="absolute -inset-8 z-0 animate-pulse blur-3xl opacity-50 rounded-[50px] bg-yellow-400/30" />
+                                        {/* 1. AURA DE FUNDO (PROFUNDIDADE) */}
+                                        <div className="absolute -inset-10 z-0 animate-pulse blur-3xl opacity-40 rounded-[60px] bg-yellow-400/20" />
 
-                                        {/* 2. VÍDEO OVERLAY (O SEGREDO DO TRIPLO-A) */}
-                                        <div className="absolute inset-x-[-40px] inset-y-[-20px] z-30 pointer-events-none mix-blend-screen opacity-90 overflow-hidden rounded-[30px]">
+                                        {/* 2. VÍDEO BACKLIGHT (ATRÁS DO CARD) */}
+                                        <div className="absolute inset-x-[-20px] inset-y-[-10px] z-0 pointer-events-none mix-blend-screen opacity-60 overflow-hidden rounded-[40px]">
                                             <video
                                                 autoPlay
                                                 loop
                                                 muted
                                                 playsInline
-                                                className="w-full h-full object-cover scale-[1.2]"
+                                                className="w-full h-full object-cover scale-[1.1]"
                                             >
                                                 <source src="/assets/cards/l1_effect.mp4" type="video/mp4" />
                                             </video>
-                                        </div>
-
-                                        {/* 3. PARTÍCULAS EXTRAS (SUTIL) */}
-                                        <div className="absolute inset-0 z-40 pointer-events-none">
-                                            <div className="absolute top-[15%] right-[20%] animate-pulse">
-                                                <i className="fa-solid fa-sparkles text-[14px] text-yellow-100 drop-shadow-[0_0_10px_white]"></i>
-                                            </div>
-                                            <div className="absolute bottom-[20%] left-[10%] animate-bounce">
-                                                <i className="fa-solid fa-star text-[10px] text-white/60"></i>
-                                            </div>
                                         </div>
                                     </>
                                 )}

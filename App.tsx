@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '6.0.0';
+      const currentVersion = '6.1.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '6.0.0');
+    localStorage.setItem('chordRush_version', '6.1.0');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Efeito Cinemático</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">CHORD <span className="text-yellow-500">PRO</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Polimento de Elite</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V6.1.0</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-yellow-400/10 rounded-2xl flex items-center justify-center text-yellow-300 border border-yellow-400/20">
-                  <i className="fa-solid fa-clapperboard text-xl"></i>
+                  <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Qualidade de Cinema</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Implementamos uma nova tecnologia de **Video Overlay (Kling AI)** para os cards lendários. Brilho real de alta definição.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Efeito Backlight</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O efeito especial agora roda **por trás** do card, criando um brilho de borda imponente sem atrapalhar a leitura do seu nome.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-white/10 rounded-2xl flex items-center justify-center text-white border border-white/20">
-                  <i className="fa-solid fa-code-merge text-xl"></i>
+                  <i className="fa-solid fa-compress text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Tecnologia Screen Blend</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O efeito visual agora se funde à arte da guitarra de forma orgânica, eliminando qualquer aspecto genérico.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Área Refinada</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Reduzimos o espaço de ocupação do efeito para que ele fique mais elegante e focado no seu ranking.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-500/20">
-                  <i className="fa-solid fa-gauge-high text-xl"></i>
+                  <i className="fa-solid fa-eye text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Performance Extrema</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Vídeo otimizado para rodar suave em qualquer dispositivo móvel sem consumir bateria extra.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Legibilidade Pró</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Ajustamos a opacidade e as camadas (z-index) para que a Supernova brilhe sem esconder os números.</p>
                 </div>
               </div>
             </div>
