@@ -234,47 +234,46 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             <div
                                 key={`${entry.name}-${index}`}
                                 onClick={() => handlePlayerClick(entry)}
-                                className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 overflow-hidden cursor-pointer active:scale-95 ${isMe ? 'border-orange-500 shadow-xl scale-[1.02] z-10' : 'border-white/5 hover:border-white/20'}`}
+                                className={`
+                                    relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 cursor-pointer active:scale-95
+                                    ${isMe ? 'border-orange-500 shadow-xl scale-[1.02] z-10' : 'border-white/5 hover:border-white/20'}
+                                    ${selectedCard?.rarity === 'épico' ? 'shadow-[0_0_20px_rgba(249,115,22,0.3)]' : ''}
+                                    ${selectedCard?.rarity === 'lendário' ? 'shadow-[0_0_30px_rgba(250,204,21,0.4)]' : ''}
+                                `}
                             >
-                                {selectedCard ? (
-                                    <>
-                                        {/* MECÂNICA DE BRILHO ÉPICO - AURA QUE PULA PRA FORA */}
-                                        {(selectedCard.rarity === 'épico' || selectedCard.rarity === 'lendário') && (
-                                            <div className={`absolute inset-0 z-0 animate-pulse transition-all duration-1000 blur-[20px] opacity-30 scale-110 ${selectedCard.rarity === 'épico' ? 'bg-orange-500' : 'bg-yellow-400'
-                                                }`} />
-                                        )}
-
-                                        {/* CARD BACKGROUND - ZOOM BALANCEADO */}
-                                        <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-95 transition-all duration-700 scale-[1.1] brightness-110"
-                                            style={{ backgroundImage: selectedCard.image }}
-                                        />
-                                        {/* GRADIENTE DE LEITURA */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent" />
-
-                                        {/* BRILHO LATERAL CRISTALINO */}
-                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
-                                            <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400' :
-                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500' :
-                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
-                                                            'bg-blue-400'
-                                                }`}>
-                                                {/* EFEITO DE BRILHO INTERNO NA BARRA */}
-                                                <div className="absolute inset-0 bg-white/40 animate-[pulse_2s_infinite]"></div>
-                                            </div>
-                                        </div>
-
-                                        {/* SOMBRA EXTERNA ÉPICA (PARA PULAR PRA FORA) */}
-                                        {selectedCard.rarity === 'épico' && (
-                                            <div className="absolute inset-0 shadow-[0_0_30px_rgba(249,115,22,0.4)] rounded-[28px] pointer-events-none"></div>
-                                        )}
-                                        {selectedCard.rarity === 'lendário' && (
-                                            <div className="absolute inset-0 shadow-[0_0_40px_rgba(250,204,21,0.5)] rounded-[28px] pointer-events-none"></div>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className={`absolute inset-0 ${isMe ? 'bg-neutral-800' : 'bg-neutral-900/60'}`} />
+                                {/* AURA EXTERNA (QUE PULA PRA FORA) */}
+                                {selectedCard && (selectedCard.rarity === 'épico' || selectedCard.rarity === 'lendário') && (
+                                    <div className={`absolute -inset-2 z-0 animate-pulse blur-2xl opacity-40 rounded-[35px] ${selectedCard.rarity === 'épico' ? 'bg-orange-600' : 'bg-yellow-500'
+                                        }`} />
                                 )}
+
+                                {/* CONTAINER PARA CLIPAR O FUNDO */}
+                                <div className="absolute inset-0 rounded-[28px] overflow-hidden z-[1]">
+                                    {selectedCard ? (
+                                        <>
+                                            {/* CARD BACKGROUND */}
+                                            <div
+                                                className="absolute inset-0 bg-cover bg-center opacity-95 transition-all duration-700 scale-[1.1] brightness-110"
+                                                style={{ backgroundImage: selectedCard.image }}
+                                            />
+                                            {/* GRADIENTE DE LEITURA */}
+                                            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent" />
+
+                                            {/* BRILHO LATERAL CRISTALINO */}
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
+                                                <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400' :
+                                                        selectedCard.rarity === 'épico' ? 'bg-orange-500' :
+                                                            selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
+                                                                'bg-blue-400'
+                                                    }`}>
+                                                    <div className="absolute inset-0 bg-white/40 animate-[pulse_2s_infinite]"></div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className={`absolute inset-0 ${isMe ? 'bg-neutral-800' : 'bg-neutral-900/60'}`} />
+                                    )}
+                                </div>
 
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-8 flex-shrink-0 flex justify-center text-left">

@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '4.3.0';
+      const currentVersion = '4.3.1';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '4.3.0');
+    localStorage.setItem('chordRush_version', '4.3.1');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Poder Épico</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-orange-500">V4.3.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Brilho Supremo</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-orange-500">V4.3.1</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
-                  <i className="fa-solid fa-drum text-xl"></i>
+                  <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo Épico: Abyssal Beats</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">A bateria das profundezas chegou! O <b>Abyssal Beats (E4)</b> completa o set instrumental épico principal.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Aura Real: Epic Aura</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Corrigido! Agora o brilho dos cards Épicos e Lendários <b>atravessa os limites</b> do banner, criando uma aura de poder visível.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-                  <i className="fa-solid fa-sun text-xl"></i>
+                  <i className="fa-solid fa-drum text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Efeito: Brilho de Elite</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Cards de 30k e 60k agora possuem uma <b>Aura Pulsante</b> que transborda fora do banner no Ranking!</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Abyssal Beats: High Contrast</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">A bateria E4 foi redesenhada. Estilo 100% focado no instrumento, sem bordas brancas e com contraste épico.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-400 border border-yellow-500/20">
-                  <i className="fa-solid fa-shield-halved text-xl"></i>
+                  <i className="fa-solid fa-bolt-lightning text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Soberania no Ranking</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Destaque-se entre os outros com o novo visual cristalino e sombras de energia épica.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Otimização Visual</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Ajustamos o sistema de renderização para garantir que nenhum card de 30k e 60k fique apagado.</p>
                 </div>
               </div>
             </div>
