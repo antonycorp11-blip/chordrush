@@ -247,13 +247,18 @@ const App: React.FC = () => {
                 JOGAR AGORA
               </button>
 
-              <button
-                onClick={() => setGameState(GameState.STORE)}
-                className="w-full relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-700 text-white font-black p-5 rounded-2xl text-xl active:translate-y-[4px] shadow-[0_4px_0_#1e1b4b] active:shadow-none transition-all flex items-center justify-center gap-4 group"
-              >
-                <i className="fa-solid fa-cart-shopping text-2xl"></i>
-                LOJA DE CARDS
-              </button>
+              <div className="relative w-full group">
+                <button
+                  disabled={true}
+                  className="w-full relative overflow-hidden bg-white/5 border-2 border-white/10 text-white/20 font-black p-5 rounded-2xl text-xl transition-all flex items-center justify-center gap-4 cursor-not-allowed"
+                >
+                  <i className="fa-solid fa-cart-shopping text-2xl"></i>
+                  LOJA DE CARDS
+                </button>
+                <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12 z-20 animate-bounce">
+                  NOVIDADES EM BREVE
+                </div>
+              </div>
 
               <button
                 onClick={() => setGameState(GameState.RANKING)}
