@@ -17,51 +17,62 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const fetchRanking = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            // 1. Buscamos TODOS os jogadores para ter o XP correto e atualizado
+            const { data: playersData, error: pError } = await supabase
+                .from('players')
+                .select('id, device_id, name, xp, selected_card_id');
+
+            // 2. Buscamos TODOS os scores da semana
+            const { data: scoresData, error: sError } = await supabase
                 .from('scores')
-                .select(`
-                    score,
-                    created_at,
-                    level,
-                    players (
-                        device_id,
-                        name,
-                        xp,
-                        selected_card_id
-                    )
-                `)
+                .select('player_id, score, created_at, level')
                 .order('score', { ascending: false });
 
-            if (data && !error) {
-                // Eliminar duplicidade por NOME (pedido pelo usuário)
-                const uniqueNamesMap = new Map();
+            if (playersData && scoresData && !pError && !sError) {
+                // Mapa para pegar o melhor score DE CADA JOGADOR
+                const playerBestScoreMap = new Map();
 
-                data.forEach(item => {
-                    const p = item.players as any;
-                    if (!p || !p.name) return;
-
-                    const nameKey = p.name.trim().toUpperCase();
-                    const existing = uniqueNamesMap.get(nameKey);
-
-                    // Se não existe ou se o score atual é maior que o já salvo
-                    if (!existing || item.score > existing.score) {
-                        uniqueNamesMap.set(nameKey, {
-                            score: item.score,
-                            created_at: item.created_at,
-                            level: item.level,
-                            device_id: p.device_id,
-                            name: p.name,
-                            xp: p.xp || 0,
-                            selected_card_id: p.selected_card_id
-                        });
+                scoresData.forEach(s => {
+                    if (!playerBestScoreMap.has(s.player_id)) {
+                        playerBestScoreMap.set(s.player_id, s);
+                    } else {
+                        const existing = playerBestScoreMap.get(s.player_id);
+                        if (s.score > existing.score) {
+                            playerBestScoreMap.set(s.player_id, s);
+                        }
                     }
                 });
 
-                const formatted = Array.from(uniqueNamesMap.values())
+                // Montar o ranking unindo XP do player + melhor score
+                const uniqueRanking = playersData
+                    .map(player => {
+                        const bestScore = playerBestScoreMap.get(player.id);
+                        if (!bestScore) return null; // Jogador sem score
+
+                        return {
+                            device_id: player.device_id,
+                            name: player.name,
+                            xp: player.xp || 0,
+                            selected_card_id: player.selected_card_id,
+                            score: bestScore.score,
+                            created_at: bestScore.created_at,
+                            level: bestScore.level
+                        };
+                    })
+                    .filter((item): item is any => item !== null)
+                    // Eliminar duplicidade por NOME (por segurança, caso o usuário tenha trocado de device)
+                    .reduce((acc: any[], current) => {
+                        const x = acc.find(item => item.name.trim().toUpperCase() === current.name.trim().toUpperCase());
+                        if (!x) return acc.concat([current]);
+                        if (current.score > x.score) {
+                            return acc.filter(item => item.name.trim().toUpperCase() !== current.name.trim().toUpperCase()).concat([current]);
+                        }
+                        return acc;
+                    }, [])
                     .sort((a, b) => b.score - a.score)
                     .slice(0, 50);
 
-                setRanking(formatted as any);
+                setRanking(uniqueRanking);
             }
         } catch (err) {
             console.error('Erro no ranking:', err);
@@ -71,13 +82,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     React.useEffect(() => {
         fetchRanking();
-        const timer = setInterval(() => {
-            setNow(Date.now());
-        }, 10000);
+        // Atualiza o "relogio" interno a cada 5 segundos para a diferença de tempo ser precisa
+        const timer = setInterval(() => setNow(Date.now()), 5000);
 
         const channel = supabase
-            .channel('ranking_refresh')
+            .channel('ranking_live')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => fetchRanking())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => fetchRanking())
             .subscribe();
 
         return () => {
@@ -89,15 +100,11 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
 
-        // Supabase timestamptz vem como ISO string com fuso.
-        // Se vier sem fuso, o Date do JS pode se perder.
+        // Converte para data absoluta (Date interpreta ISO com fuso corretamente)
         const past = new Date(dateString).getTime();
-        const serverNow = Date.now(); // Idealmente viria do servidor, mas usamos o local
-        const diff = Math.floor((serverNow - past) / 1000);
+        const diff = Math.floor((now - past) / 1000);
 
-        // Se a diferença for muito grande (ex: 8h), pode ser erro de fuso no BD
-        // Mas vamos tentar tratar os casos comuns:
-        if (diff < 30) return 'Agora';
+        if (diff < 15) return 'Agora';
         if (diff < 60) return '1m';
         if (diff < 3600) return `${Math.floor(diff / 60)}m`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
@@ -168,11 +175,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             </div>
                         );
                     })}
-                    {ranking.length === 0 && (
-                        <div className="text-center p-10 text-white/20 font-black uppercase tracking-widest text-xs">
-                            Nenhuma pontuação registrada ainda
-                        </div>
-                    )}
                 </div>
             )}
         </div>
