@@ -171,7 +171,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V4.0.0 • Dossiê Ativo</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V5.0.0 • Era Lendária</span>
                 </div>
             </div>
 
@@ -243,8 +243,15 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 {/* AURA EXTERNA (QUE PULA PRA FORA) */}
                                 {selectedCard && (selectedCard.rarity === 'épico' || selectedCard.rarity === 'lendário') && (
-                                    <div className={`absolute -inset-2 z-0 animate-pulse blur-2xl opacity-40 rounded-[35px] ${selectedCard.rarity === 'épico' ? 'bg-orange-600' : 'bg-yellow-500'
+                                    <div className={`absolute -inset-4 z-0 animate-pulse blur-3xl opacity-50 rounded-[40px] ${selectedCard.rarity === 'épico' ? 'bg-orange-600' : 'bg-yellow-400'
                                         }`} />
+                                )}
+
+                                {/* EFEITO LENDÁRIO DE RAIOS (EXCLUSIVO) */}
+                                {selectedCard?.rarity === 'lendário' && (
+                                    <div className="absolute inset-x-0 inset-y-[-50%] z-0 animate-[spin_12s_linear_infinite] opacity-30 pointer-events-none">
+                                        <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(250,204,21,0.4)_20deg,transparent_40deg,rgba(250,204,21,0.4)_60deg,transparent_80deg)]" />
+                                    </div>
                                 )}
 
                                 {/* CONTAINER PARA CLIPAR O FUNDO */}
@@ -261,12 +268,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
                                             {/* BRILHO LATERAL CRISTALINO */}
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
-                                                <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400' :
+                                                <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-500 shadow-[0_0_15px_rgba(250,204,21,0.8)]' :
                                                         selectedCard.rarity === 'épico' ? 'bg-orange-500' :
                                                             selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
                                                                 'bg-blue-400'
                                                     }`}>
-                                                    <div className="absolute inset-0 bg-white/40 animate-[pulse_2s_infinite]"></div>
+                                                    {/* EFEITO DE BRILHO INTERNO NA BARRA */}
+                                                    <div className={`absolute inset-0 ${selectedCard.rarity === 'lendário' ? 'animate-[ping_3s_infinite] bg-white/60' : 'bg-white/40 animate-[pulse_2s_infinite]'}`}></div>
                                                 </div>
                                             </div>
                                         </>

@@ -29,7 +29,7 @@ export const CARDS: ExtendedCard[] = [
     { id: 'e4', name: 'Abyssal Beats', rarity: 'épico', price: 30000, image: 'url(/assets/cards/e4.png)', isReady: true },
 
     // LENDÁRIO - 60,000 XP
-    { id: 'l1', name: 'Supernova', rarity: 'lendário', price: 60000, image: 'url(/assets/cards/legendary.png)', isReady: false },
+    { id: 'l1', name: 'Supernova', rarity: 'lendário', price: 60000, image: 'url(/assets/cards/l1.png)', isReady: true },
     { id: 'l2', name: 'Diamond Strings', rarity: 'lendário', price: 60000, image: 'url(/assets/cards/legendary.png)', isReady: false },
     { id: 'l3', name: 'Solar Crown', rarity: 'lendário', price: 60000, image: 'url(/assets/cards/legendary.png)', isReady: false },
     { id: 'l4', name: 'Galaxy Master', rarity: 'lendário', price: 60000, image: 'url(/assets/cards/legendary.png)', isReady: false },
