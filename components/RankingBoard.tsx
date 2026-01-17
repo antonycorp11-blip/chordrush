@@ -17,7 +17,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const fetchRanking = async () => {
         setLoading(true);
         try {
-            // Buscamos os scores com os dados dos players inclusos
             const { data, error } = await supabase
                 .from('scores')
                 .select(`
@@ -34,19 +33,19 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 .order('score', { ascending: false });
 
             if (data && !error) {
-                // Eliminar duplicidade por DEVICE_ID (garante que cada jogador/celular apareça só uma vez)
-                const uniquePlayersMap = new Map();
+                // Eliminar duplicidade por NOME (pedido pelo usuário)
+                const uniqueNamesMap = new Map();
 
                 data.forEach(item => {
                     const p = item.players as any;
-                    if (!p) return;
+                    if (!p || !p.name) return;
 
-                    const id = p.device_id;
-                    const existing = uniquePlayersMap.get(id);
+                    const nameKey = p.name.trim().toUpperCase();
+                    const existing = uniqueNamesMap.get(nameKey);
 
                     // Se não existe ou se o score atual é maior que o já salvo
                     if (!existing || item.score > existing.score) {
-                        uniquePlayersMap.set(id, {
+                        uniqueNamesMap.set(nameKey, {
                             score: item.score,
                             created_at: item.created_at,
                             level: item.level,
@@ -58,7 +57,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     }
                 });
 
-                const formatted = Array.from(uniquePlayersMap.values())
+                const formatted = Array.from(uniqueNamesMap.values())
                     .sort((a, b) => b.score - a.score)
                     .slice(0, 50);
 
@@ -72,12 +71,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     React.useEffect(() => {
         fetchRanking();
-        const timer = setInterval(() => setNow(Date.now()), 15000);
+        const timer = setInterval(() => {
+            setNow(Date.now());
+        }, 10000);
 
         const channel = supabase
-            .channel('ranking_live')
+            .channel('ranking_refresh')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => fetchRanking())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => fetchRanking())
             .subscribe();
 
         return () => {
@@ -89,13 +89,16 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
 
-        // Fix para garantir que o JS interprete como UTC se não houver fuso
-        const fixedDateStr = dateString.includes('Z') || dateString.includes('+') ? dateString : dateString.replace(' ', 'T') + 'Z';
-        const past = new Date(fixedDateStr).getTime();
-        const diff = Math.floor((Date.now() - past) / 1000);
+        // Supabase timestamptz vem como ISO string com fuso.
+        // Se vier sem fuso, o Date do JS pode se perder.
+        const past = new Date(dateString).getTime();
+        const serverNow = Date.now(); // Idealmente viria do servidor, mas usamos o local
+        const diff = Math.floor((serverNow - past) / 1000);
 
-        if (diff < 0) return 'Agora'; // Evita tempos negativos se o relógio local estiver atrasado
-        if (diff < 60) return 'Agora';
+        // Se a diferença for muito grande (ex: 8h), pode ser erro de fuso no BD
+        // Mas vamos tentar tratar os casos comuns:
+        if (diff < 30) return 'Agora';
+        if (diff < 60) return '1m';
         if (diff < 3600) return `${Math.floor(diff / 60)}m`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
         return `${Math.floor(diff / 86400)}d`;
@@ -127,7 +130,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         const progress = getNextLevelProgress(playerXP);
 
                         return (
-                            <div key={`${entry.device_id}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5 opacity-90'}`}>
+                            <div key={`${entry.name}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5 opacity-90'}`}>
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-8 flex-shrink-0 flex justify-center">
                                         {index < 3 ? (
@@ -165,6 +168,11 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             </div>
                         );
                     })}
+                    {ranking.length === 0 && (
+                        <div className="text-center p-10 text-white/20 font-black uppercase tracking-widest text-xs">
+                            Nenhuma pontuação registrada ainda
+                        </div>
+                    )}
                 </div>
             )}
         </div>
