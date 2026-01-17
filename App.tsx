@@ -225,7 +225,7 @@ const App: React.FC = () => {
 
       // Atualizar saldos localmente
       if (data.type === 'acorde_coins') {
-        setStats(prev => ({ ...prev, totalXP: prev.totalXP + data.amount }));
+        setStats(prev => ({ ...prev, acordeCoins: prev.acordeCoins + data.amount }));
       } else if (data.type === 'patente_xp') {
         setStats(prev => ({ ...prev, accumulatedXP: prev.accumulatedXP + data.amount }));
       }
@@ -294,9 +294,10 @@ const App: React.FC = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
 
-    const finalScore = scoreRef.current;
-    const finalLevel = levelRef.current;
-    const finalXP = sessionXPRef.current;
+    // Captura os valores do estado NO MOMENTO do fim do jogo
+    const finalScore = score;
+    const finalLevel = currentLevel;
+    const finalXP = sessionXP;
 
     setGameState(GameState.GAMEOVER);
     setStats(prev => ({
@@ -309,11 +310,9 @@ const App: React.FC = () => {
     // Sincronizar progresso da missão
     await updateMissionProgress();
 
-    // Chamada Única e Segura: Agora score e XP são enviados juntos
-    // O Banco de Dados vai validar se o XP faz sentido para esse Score
     setIsSavingScore(true);
     const deviceId = getDeviceId();
-    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v3', {
+    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v4', {
       device_id_param: deviceId,
       score_param: finalScore,
       level_param: finalLevel,
@@ -322,9 +321,9 @@ const App: React.FC = () => {
 
     if (error) {
       console.error('Erro grave ao salvar score:', error.message);
-      // Fallback local se o banco falhar
+      alert('Falha ao salvar sua pontuação. Verifique sua rede.');
     } else {
-      console.log('Score V3 registrado.');
+      console.log('Score V4 registrado com sucesso:', saveResult);
     }
     setIsSavingScore(false);
   };
@@ -416,7 +415,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.0.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.1.0</p>
               </div>
             </div>
 
