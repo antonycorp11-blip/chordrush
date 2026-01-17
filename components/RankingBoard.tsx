@@ -247,30 +247,30 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         }`} />
                                 )}
 
-                                {/* EFEITO LENDÁRIO: ELEMENTOS GRÁFICOS REAIS */}
+                                {/* EFEITO LENDÁRIO: ELEMENTOS GRÁFICOS REAIS (CONTIDOS) */}
                                 {selectedCard?.rarity === 'lendário' && (
                                     <div className="absolute inset-0 z-0 pointer-events-none">
-                                        {/* RAIOS DE LUZ FÍSICOS (DENTRO E FORA) */}
-                                        <div className="absolute inset-x-[-100%] inset-y-[-100%] animate-[spin_15s_linear_infinite] opacity-40">
-                                            {[...Array(8)].map((_, i) => (
+                                        {/* RAIOS DE LUZ FÍSICOS (AGORA CONTIDOS) */}
+                                        <div className="absolute inset-[-40px] z-0 animate-[spin_20s_linear_infinite] opacity-30 overflow-hidden rounded-[40px]">
+                                            {[...Array(12)].map((_, i) => (
                                                 <div
                                                     key={i}
-                                                    className="absolute top-1/2 left-1/2 w-[300%] h-6 bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent -translate-x-1/2 -translate-y-1/2"
-                                                    style={{ transform: `translate(-50%, -50%) rotate(${i * 45}deg)` }}
+                                                    className="absolute top-1/2 left-1/2 w-[200%] h-1 bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent -translate-x-1/2 -translate-y-1/2"
+                                                    style={{ transform: `translate(-50%, -50%) rotate(${i * 30}deg)` }}
                                                 />
                                             ))}
                                         </div>
 
-                                        {/* ESTRELAS/BRILHOS QUE PULAM NO CARD */}
-                                        <div className="absolute inset-0 z-20">
-                                            <div className="absolute top-[20%] right-[15%] animate-bounce opacity-80">
-                                                <i className="fa-solid fa-star text-[10px] text-yellow-200 drop-shadow-[0_0_8px_white]"></i>
+                                        {/* ESTRELAS/BRILHOS REAIS (MAIS VISÍVEIS) */}
+                                        <div className="absolute inset-0 z-30">
+                                            <div className="absolute top-[15%] right-[20%] animate-bounce">
+                                                <i className="fa-solid fa-sparkles text-[14px] text-yellow-200 drop-shadow-[0_0_10px_rgba(255,255,255,0.8)]"></i>
                                             </div>
-                                            <div className="absolute bottom-[25%] left-[30%] animate-pulse opacity-60" style={{ animationDelay: '1s' }}>
-                                                <i className="fa-solid fa-star text-[8px] text-yellow-100 drop-shadow-[0_0_5px_white]"></i>
+                                            <div className="absolute bottom-[20%] left-[35%] animate-pulse pb-1" style={{ animationDelay: '1.2s' }}>
+                                                <i className="fa-solid fa-star text-[10px] text-white drop-shadow-[0_0_8px_rgba(255,255,255,1)]"></i>
                                             </div>
-                                            <div className="absolute top-[50%] right-[40%] animate-ping opacity-30" style={{ animationDelay: '0.5s' }}>
-                                                <i className="fa-solid fa-star text-[6px] text-white"></i>
+                                            <div className="absolute top-[40%] left-[45%] animate-ping opacity-80" style={{ animationDelay: '0.7s' }}>
+                                                <i className="fa-solid fa-star text-[12px] text-yellow-300 drop-shadow-[0_0_6px_rgba(250,204,21,1)]"></i>
                                             </div>
                                         </div>
                                     </div>
@@ -291,9 +291,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                             {/* BRILHO LATERAL CRISTALINO */}
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
                                                 <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-600 shadow-[0_0_15px_rgba(250,204,21,1)]' :
-                                                        selectedCard.rarity === 'épico' ? 'bg-orange-500' :
-                                                            selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
-                                                                'bg-blue-400'
+                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500' :
+                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
+                                                            'bg-blue-400'
                                                     }`}>
                                                     {/* VARREDURA DE BRILHO (DIAMOND SWEEP) */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-transparent via-white/80 to-transparent ${selectedCard.rarity === 'lendário' ? 'animate-[bounce_2s_infinite]' : 'bg-white/40 animate-[pulse_2s_infinite]'}`}></div>
