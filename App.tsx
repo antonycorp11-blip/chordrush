@@ -313,7 +313,7 @@ const App: React.FC = () => {
     // O Banco de Dados vai validar se o XP faz sentido para esse Score
     setIsSavingScore(true);
     const deviceId = getDeviceId();
-    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v2', {
+    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v3', {
       device_id_param: deviceId,
       score_param: finalScore,
       level_param: finalLevel,
@@ -321,9 +321,10 @@ const App: React.FC = () => {
     });
 
     if (error) {
-      console.error('Erro ao salvar score:', error.message);
-    } else if (saveResult) {
-      console.log('Dados salvos com sucesso.');
+      console.error('Erro grave ao salvar score:', error.message);
+      // Fallback local se o banco falhar
+    } else {
+      console.log('Score V3 registrado.');
     }
     setIsSavingScore(false);
   };
@@ -415,7 +416,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.8.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.9.0</p>
               </div>
             </div>
 

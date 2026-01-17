@@ -22,20 +22,16 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const fetchRanking = async () => {
         try {
-            // Buscamos diretamente da VIEW semanal que criamos no SQL
+            // Buscamos diretamente da nova RPC V3 que é mais performática e filtrada por 7 dias
             const { data: rankingData, error: rError } = await supabase
-                .from('weekly_ranking_v2')
-                .select('*')
-                .order('score', { ascending: false })
-                .limit(100);
+                .rpc('get_weekly_ranking_v3');
 
             if (rError) throw rError;
 
             if (!rankingData || rankingData.length === 0) {
                 setRanking([]);
             } else {
-                // Mapear os dados da VIEW para o formato esperado pelo componente
-                const formattedRanking = rankingData.map(item => ({
+                const formattedRanking = rankingData.map((item: any) => ({
                     id: item.player_id,
                     device_id: item.device_id,
                     name: item.name || 'JOGADOR ANÔNIMO',
@@ -46,10 +42,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     created_at: item.created_at,
                     selected_card_id: item.selected_card_id
                 }));
-                setRanking(formattedRanking as any);
+                setRanking(formattedRanking);
             }
         } catch (err) {
-            console.error('Erro ao processar ranking semanal:', err);
+            console.error('Erro ao processar ranking V3:', err);
         } finally {
             setLoading(false);
         }
@@ -109,9 +105,20 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 active:scale-95 transition-all text-white shadow-lg">
                     <i className="fa-solid fa-chevron-left text-xl"></i>
                 </button>
-                <div className="flex flex-col items-end text-right">
-                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">SEMANAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V6.6.0 • Premiação Ativa</span>
+                <div className="flex items-center gap-3 text-right">
+                    <button
+                        onClick={() => {
+                            setLoading(true);
+                            fetchRanking();
+                        }}
+                        className="w-10 h-10 flex items-center justify-center bg-white/5 rounded-2xl border border-white/5 text-white/40 hover:text-white transition-all active:rotate-180"
+                    >
+                        <i className={`fa-solid fa-arrows-rotate ${loading ? 'animate-spin' : ''}`}></i>
+                    </button>
+                    <div className="flex flex-col">
+                        <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">SEMANAL</span></h2>
+                        <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic italic">V6.9.0 • 7 Dias Ativos</span>
+                    </div>
                 </div>
             </div>
 
