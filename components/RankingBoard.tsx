@@ -328,7 +328,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             <div className="w-full text-left">
                                 <div className="flex items-center justify-between mb-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Coleção de Cards</h4>
-                                    <span className="text-[10px] font-black text-orange-500">{ownedCards.length} / {CARDS.filter(c => c.isReady).length}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black text-orange-500 tabular-nums">{ownedCards.length}</span>
+                                        <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">/ {CARDS.filter(c => c.isReady).length}</span>
+                                    </div>
                                 </div>
 
                                 {profileLoading ? (
@@ -336,20 +339,37 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-4 gap-2 max-h-[30vh] overflow-y-auto no-scrollbar pb-4">
+                                    <div className="grid grid-cols-4 gap-2 max-h-[35vh] overflow-y-auto no-scrollbar pb-6 px-1">
                                         {CARDS.filter(c => c.isReady).map(card => {
                                             const isOwned = ownedCards.includes(card.id);
+                                            const rarityColors: Record<string, string> = {
+                                                'comum': 'border-blue-500/20',
+                                                'raro': 'border-cyan-500/30',
+                                                'épico': 'border-orange-500/40',
+                                                'lendário': 'border-yellow-400/50'
+                                            };
+
                                             return (
                                                 <div
                                                     key={card.id}
-                                                    className={`aspect-[2/3] rounded-xl border-2 transition-all relative overflow-hidden ${isOwned ? 'border-orange-500/50 bg-orange-500/10' : 'border-white/5 bg-white/5 grayscale opacity-20'}`}
-                                                    title={card.name}
+                                                    className={`aspect-[2/3] rounded-xl border-2 transition-all relative overflow-hidden group ${isOwned ? `${rarityColors[card.rarity] || 'border-white/20'} bg-white/5` : 'border-white/5 bg-white/5 opacity-30 grayscale'}`}
                                                 >
-                                                    {isOwned && (
-                                                        <div
-                                                            className="absolute inset-0 bg-cover bg-center"
-                                                            style={{ backgroundImage: card.image }}
-                                                        />
+                                                    {/* CARD IMAGE - SEMPRE VISÍVEL MAS COM FILTRO SE BLOQUEADO */}
+                                                    <div
+                                                        className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                                                        style={{ backgroundImage: card.image }}
+                                                    />
+
+                                                    {/* EFEITO DE LOCK SE NÃO POSSUIR */}
+                                                    {!isOwned && (
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                                            <i className="fa-solid fa-lock text-[10px] text-white/40"></i>
+                                                        </div>
+                                                    )}
+
+                                                    {/* OVERLAY DE BRILHO SE POSSUIR */}
+                                                    {isOwned && card.rarity !== 'comum' && (
+                                                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none"></div>
                                                     )}
                                                 </div>
                                             );
@@ -359,7 +379,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             </div>
                         </div>
 
-                        <button onClick={() => setSelectedPlayer(null)} className="w-full mt-6 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl z-20">VOLTAR AO RANKING</button>
+                        <button onClick={() => setSelectedPlayer(null)} className="w-full mt-4 bg-white text-black font-black py-4 rounded-3xl text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-2xl z-20 hover:bg-orange-500 hover:text-white">VOLTAR AO RANKING</button>
                     </div>
                 </div>
             )}

@@ -29,6 +29,7 @@ export enum GameState {
 }
 
 export interface RankingEntry {
+  id: string;             // Database ID
   name: string;
   score: number;
   level: number;
