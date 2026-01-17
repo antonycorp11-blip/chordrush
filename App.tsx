@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '3.2.0';
+      const currentVersion = '3.3.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '3.2.0');
+    localStorage.setItem('chordRush_version', '3.3.0');
     setShowChangelog(false);
   };
 
@@ -493,26 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Novidades da Versão</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">THE SYNTH <span className="text-white/20">V3.2.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Dossiê & Recompensas</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-white/20">V3.3.0</span></h2>
             </div>
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left">
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                  <i className="fa-solid fa-gift text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">🎁 Bônus de 5.000 XP</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Presente para todos os alunos! <b>5.000 de XP</b> creditados para você gastar em novos cards na loja.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
+                  <i className="fa-solid fa-address-card text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">🔍 Dossiê do Jogador</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Clique em qualquer nome no Ranking para ver as estatísticas, patentes e todos os cards do player!</p>
+                </div>
+              </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-magenta-500/10 rounded-2xl flex items-center justify-center text-pink-500 border border-pink-500/20">
                   <i className="fa-solid fa-keyboard text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo Teclado: Cyber Synth</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O novo card <b>Cyber Synth (R3)</b> chegou! Estilo retro-futurista para os mestres das teclas.</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20">
-                  <i className="fa-solid fa-guitar text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Coleção Expandida</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed"><b>Indigo Beat</b> e <b>Neon Bass</b> continuam disponíveis na loja premium.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo: Cyber Synth</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O card de teclado <b>(R3)</b> já está disponível para compra com seu novo bônus!</p>
                 </div>
               </div>
             </div>
