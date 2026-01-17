@@ -247,54 +247,32 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         }`} />
                                 )}
 
-                                {/* EFEITO LENDÁRIO: SISTEMA DE ORNAMENTOS FRONTAIS (V5.3) */}
+                                {/* EFEITO LENDÁRIO: CINEMATIC OVERLAY (V6.0) */}
                                 {selectedCard?.rarity === 'lendário' && (
                                     <>
                                         {/* 1. AURA DE FUNDO (ATRÁS) */}
-                                        <div className="absolute -inset-6 z-0 animate-pulse blur-3xl opacity-60 rounded-[45px] bg-yellow-500/40" />
+                                        <div className="absolute -inset-8 z-0 animate-pulse blur-3xl opacity-50 rounded-[50px] bg-yellow-400/30" />
 
-                                        {/* 2. RAIOS SOLARES SVG (ATRÁS MAS VISÍVEIS) */}
-                                        <div className="absolute inset-x-[-100px] inset-y-[-100px] z-0 animate-[spin_30s_linear_infinite] opacity-40">
-                                            <svg className="w-full h-full" viewBox="0 0 200 200">
-                                                <defs>
-                                                    <linearGradient id="rayGold" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                        <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.8" />
-                                                        <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
-                                                    </linearGradient>
-                                                </defs>
-                                                {[...Array(8)].map((_, i) => (
-                                                    <rect
-                                                        key={i}
-                                                        x="98" y="0" width="4" height="100"
-                                                        fill="url(#rayGold)"
-                                                        transform={`rotate(${i * 45} 100 100)`}
-                                                    />
-                                                ))}
-                                            </svg>
+                                        {/* 2. VÍDEO OVERLAY (O SEGREDO DO TRIPLO-A) */}
+                                        <div className="absolute inset-x-[-40px] inset-y-[-20px] z-30 pointer-events-none mix-blend-screen opacity-90 overflow-hidden rounded-[30px]">
+                                            <video
+                                                autoPlay
+                                                loop
+                                                muted
+                                                playsInline
+                                                className="w-full h-full object-cover scale-[1.2]"
+                                            >
+                                                <source src="/assets/cards/l1_effect.mp4" type="video/mp4" />
+                                            </video>
                                         </div>
 
-                                        {/* 3. ELEMENTOS GRÁFICOS FRONTAIS (POR CIMA DA GUITARRA) */}
-                                        <div className="absolute inset-0 z-30 pointer-events-none">
-                                            {/* VARREDURA DE LUZ (SHEEN) */}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full animate-[shimmer_3s_infinite] skew-x-[-20deg]" />
-
-                                            {/* ESTRELAS E BRILHOS EM CAMADAS */}
+                                        {/* 3. PARTÍCULAS EXTRAS (SUTIL) */}
+                                        <div className="absolute inset-0 z-40 pointer-events-none">
                                             <div className="absolute top-[15%] right-[20%] animate-pulse">
-                                                <i className="fa-solid fa-sparkles text-[18px] text-yellow-200 drop-shadow-[0_0_15px_white]"></i>
+                                                <i className="fa-solid fa-sparkles text-[14px] text-yellow-100 drop-shadow-[0_0_10px_white]"></i>
                                             </div>
-                                            <div className="absolute bottom-[20%] left-[40%] animate-bounce">
-                                                <i className="fa-solid fa-star text-[12px] text-white drop-shadow-[0_0_12px_white]"></i>
-                                            </div>
-                                            <div className="absolute top-[50%] right-[10%] animate-[ping_5s_infinite]">
-                                                <i className="fa-solid fa-certificate text-[10px] text-yellow-400 opacity-60"></i>
-                                            </div>
-
-                                            {/* BRILHO NAS QUINAS */}
-                                            <div className="absolute top-2 left-2 animate-pulse">
-                                                <i className="fa-solid fa-plus text-[10px] text-white/40"></i>
-                                            </div>
-                                            <div className="absolute bottom-2 right-2 animate-pulse" style={{ animationDelay: '1s' }}>
-                                                <i className="fa-solid fa-plus text-[10px] text-white/40"></i>
+                                            <div className="absolute bottom-[20%] left-[10%] animate-bounce">
+                                                <i className="fa-solid fa-star text-[10px] text-white/60"></i>
                                             </div>
                                         </div>
                                     </>
@@ -315,9 +293,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                             {/* BRILHO LATERAL CRISTALINO */}
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
                                                 <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-600 shadow-[0_0_20px_rgba(250,204,21,1)]' :
-                                                        selectedCard.rarity === 'épico' ? 'bg-orange-500' :
-                                                            selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
-                                                                'bg-blue-400'
+                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500' :
+                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
+                                                            'bg-blue-400'
                                                     }`}>
                                                     {/* VARREDURA DE BRILHO (DIAMOND SWEEP) */}
                                                     <div className={`absolute inset-0 bg-gradient-to-t from-transparent via-white/80 to-transparent ${selectedCard.rarity === 'lendário' ? 'animate-[bounce_2s_infinite]' : 'bg-white/40 animate-[pulse_2s_infinite]'}`}></div>
