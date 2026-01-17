@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '3.0.0';
+      const currentVersion = '3.1.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '3.0.0');
+    localStorage.setItem('chordRush_version', '3.1.0');
     setShowChangelog(false);
   };
 
@@ -487,32 +487,32 @@ const App: React.FC = () => {
 
       {showChangelog && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-neutral-900 border-2 border-orange-500/30 rounded-[40px] p-8 relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+          <div className="w-full max-w-md bg-neutral-900 border-2 border-orange-500/30 rounded-[40px] p-8 relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden text-center">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-yellow-500"></div>
             <button onClick={closeChangelog} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">LEVEL SYSTEM <span className="text-white/20">V3.0.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Novidades da Versão</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">NEW CARDS <span className="text-white/20">V3.1.0</span></h2>
             </div>
-            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left">
               <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-                  <i className="fa-solid fa-medal text-xl"></i>
+                <div className="w-10 h-10 flex-shrink-0 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                  <i className="fa-solid fa-guitar text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novas Patentes</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Sistema de títulos musicais baseado no seu XP. Sua patente não cai mais ao comprar cards!</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novas Artes Premium</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Liberamos o <b>Indigo Beat (C5)</b> e o <b>Neon Bass (R2)</b> com artes pixel art exclusivas!</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                  <i className="fa-solid fa-cart-shopping text-xl"></i>
+                <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                  <i className="fa-solid fa-shield-halved text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Loja Premium</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Novo layout em grade para as novas artes ultra premium que estão chegando.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Segurança Reforçada</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Sistema anti-cheat ativo. Agora o ranking é protegido contra manipulação de XP e Score.</p>
                 </div>
               </div>
             </div>
@@ -532,7 +532,7 @@ const App: React.FC = () => {
               <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">PATENTES</h2>
               <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-2 px-1">Seu XP Total desbloqueia novos títulos</p>
             </div>
-            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
+            <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar text-left">
               {[
                 { name: 'Iniciante', xp: 0, style: 'text-white/40', bg: 'bg-white/5' },
                 { name: 'Estudante', xp: 5000, style: 'text-orange-400', bg: 'bg-orange-400/10' },
