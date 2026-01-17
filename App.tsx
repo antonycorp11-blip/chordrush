@@ -108,15 +108,17 @@ const App: React.FC = () => {
     const deviceId = getDeviceId();
     const nameToSave = stats.playerName.trim() || `JOGADOR-${deviceId.slice(0, 4)}`;
     try {
-      const { data, error } = await supabase
-        .from('players')
-        .upsert({ device_id: deviceId, name: nameToSave }, { onConflict: 'device_id' })
-        .select().single();
+      // Usamos RPC para que o Matheus não consiga injetar 'xp: 99999' no meio do comando de nome
+      const { error } = await supabase.rpc('update_player_name_secure', {
+        device_id_param: deviceId,
+        new_name: nameToSave
+      });
+
       if (error) throw error;
       setIsRenaming(false);
-      return data.id;
+      return true;
     } catch (err) {
-      console.error('Erro ao salvar perfil:', err);
+      console.error('Erro ao salvar perfil (Seguro):', err);
       return null;
     }
   };

@@ -65,34 +65,22 @@ export const CardStore: React.FC<CardStoreProps> = ({
 
         try {
             const deviceId = getDeviceId();
-            const { data: playerData } = await supabase
-                .from('players')
-                .select('id, xp')
-                .eq('device_id', deviceId)
-                .single();
 
-            if (!playerData) return;
-
-            const { error: buyError } = await supabase
-                .from('player_cards')
-                .insert({ player_id: playerData.id, card_id: card.id });
+            // Usamos a função RPC segura para que o Matheus não mude o preço no console
+            const { error: buyError } = await supabase.rpc('purchase_card', {
+                device_id_param: deviceId,
+                card_id_param: card.id,
+                card_price_param: card.price
+            });
 
             if (buyError) throw buyError;
 
-            // Deduz apenas do SALDO (xp), não do total_xp
-            if (card.price > 0) {
-                const { error: xpError } = await supabase
-                    .from('players')
-                    .update({ xp: playerData.xp - card.price })
-                    .eq('id', playerData.id);
-
-                if (xpError) throw xpError;
-                onXPUpdate(playerData.xp - card.price);
-            }
-
+            // Atualiza o saldo localmente para refletir a compra
+            onXPUpdate(totalXP - card.price);
             setOwnedCards(prev => [...prev, card.id]);
+            alert(`Card "${card.name}" adquirido com sucesso!`);
         } catch (err: any) {
-            console.error('Error buying card:', err);
+            console.error('Error buying card (Security):', err);
             alert('Erro na compra: ' + err.message);
         }
     };
@@ -100,15 +88,17 @@ export const CardStore: React.FC<CardStoreProps> = ({
     const selectCard = async (cardId: string) => {
         try {
             const deviceId = getDeviceId();
-            const { error } = await supabase
-                .from('players')
-                .update({ selected_card_id: cardId || null })
-                .eq('device_id', deviceId);
+
+            // Usamos RPC para selecionar o card com segurança
+            const { error } = await supabase.rpc('select_player_card', {
+                device_id_param: deviceId,
+                card_id_param: cardId
+            });
 
             if (error) throw error;
             onCardSelect(cardId);
         } catch (err) {
-            console.error('Error selecting card:', err);
+            console.error('Error selecting card (Security):', err);
         }
     };
 
