@@ -14,11 +14,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const [loading, setLoading] = React.useState(true);
     const [now, setNow] = React.useState(Date.now());
     const [drift, setDrift] = React.useState(0);
+    const [selectedPlayer, setSelectedPlayer] = React.useState<any>(null);
+    const [ownedCards, setOwnedCards] = React.useState<string[]>([]);
+    const [profileLoading, setProfileLoading] = React.useState(false);
+
     const deviceId = getDeviceId();
 
     const fetchRanking = async () => {
         try {
-            // 1. CALIBRAÇÃO: Pegar o score mais recente do mundo (independente de ser baixo ou alto)
             const { data: latestData } = await supabase
                 .from('scores')
                 .select('created_at')
@@ -31,12 +34,11 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 setDrift(localNow - serverLatest);
             }
 
-            // 2. RANKING: Pegar os MAIORES scores (não os mais recentes)
             const { data: scoresData, error: sError } = await supabase
                 .from('scores')
                 .select('player_id, score, created_at')
                 .order('score', { ascending: false })
-                .limit(500); // Pegamos bastante para consolidar bem
+                .limit(500);
 
             if (sError) throw sError;
             if (!scoresData || scoresData.length === 0) {
@@ -49,7 +51,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
             const { data: playersData, error: pError } = await supabase
                 .from('players')
-                .select('id, device_id, name, xp, total_xp, selected_card_id')
+                .select('id, device_id, name, xp, total_xp, selected_card_id, games_played')
                 .in('id', playerIds);
 
             if (pError) throw pError;
@@ -68,11 +70,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
                 if (!existing) {
                     consolidatedMap.set(nameKey, {
+                        id: player.id,
                         name: player.name,
                         device_id: player.device_id,
                         xp: player.xp || 0,
                         total_xp: player.total_xp || player.xp || 0,
                         selected_card_id: player.selected_card_id,
+                        games_played: player.games_played || 0,
                         bestScore: s.score,
                         lastPlayedTime: sTime,
                         lastPlayedAt: s.created_at
@@ -85,10 +89,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     }
                     existing.xp = player.xp || 0;
                     existing.total_xp = player.total_xp || player.xp || 0;
-                    // Atualiza o card se o player record for o mais recente
-                    if (sTime >= existing.lastPlayedTime) {
-                        existing.selected_card_id = player.selected_card_id;
-                    }
                 }
             });
 
@@ -96,11 +96,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 .sort((a, b) => b.bestScore - a.bestScore)
                 .slice(0, 100)
                 .map(item => ({
+                    id: item.id,
                     device_id: item.device_id,
                     name: item.name,
                     xp: item.xp,
                     total_xp: item.total_xp,
                     score: item.bestScore,
+                    games_played: item.games_played,
                     created_at: item.lastPlayedAt,
                     selected_card_id: item.selected_card_id
                 }));
@@ -110,6 +112,24 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
             console.error('Erro ao processar ranking:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePlayerClick = async (player: any) => {
+        setProfileLoading(true);
+        setSelectedPlayer(player);
+        try {
+            // Buscar cards desbloqueados
+            const { data: cards } = await supabase
+                .from('player_cards')
+                .select('card_id')
+                .eq('player_id', player.id);
+
+            setOwnedCards(cards?.map(c => c.card_id) || []);
+        } catch (err) {
+            console.error('Erro ao buscar perfil detalhado:', err);
+        } finally {
+            setProfileLoading(false);
         }
     };
 
@@ -151,7 +171,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V3.0.0 • Lifetime Ranking</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V3.2.0 • Perfil Ativo</span>
                 </div>
             </div>
 
@@ -168,13 +188,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl group-hover:bg-orange-500/20 transition-all"></div>
 
                         <div className="relative z-10 flex items-center justify-between">
-                            <div className="flex flex-col">
+                            <div className="flex flex-col text-left">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Prêmio da Semana</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 text-left">Prêmio da Semana</span>
                                 </div>
-                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">BARRA DE <span className="text-orange-500">CACAU SHOW</span></h3>
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2">1º LUGAR NO RANKING</p>
+                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none text-left">BARRA DE <span className="text-orange-500 text-left">CACAU SHOW</span></h3>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2 text-left">1º LUGAR NO RANKING</p>
                             </div>
                             <div className="flex flex-col items-end">
                                 <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-2xl flex flex-col items-center min-w-[70px]">
@@ -185,9 +205,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                             const daysToAdd = (7 - d.getDay()) % 7;
                                             const deadline = new Date(now);
                                             deadline.setDate(d.getDate() + daysToAdd);
-                                            deadline.setHours(12, 0, 0, 0); // DOMINGO 12H
+                                            deadline.setHours(12, 0, 0, 0);
 
-                                            // Se já passou das 12h de domingo hoje, mostra o próximo domingo
                                             if (now > deadline.getTime()) {
                                                 deadline.setDate(deadline.getDate() + 7);
                                             }
@@ -206,15 +225,17 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
-                        const playerXP = entry.total_xp || entry.xp || 0; // Usar total_xp para a patente no ranking
+                        const playerXP = entry.total_xp || entry.xp || 0;
                         const titleInfo = getPlayerTitle(playerXP);
                         const progress = getNextLevelProgress(playerXP);
-                        // Achar o card selecionado
                         const selectedCard = CARDS.find(c => c.id === entry.selected_card_id);
 
                         return (
-                            <div key={`${entry.name}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 overflow-hidden ${isMe ? 'border-orange-500 shadow-xl scale-[1.02] z-10' : 'border-white/5'}`}>
-                                {/* BACKGROUND DO CARD (Se houver) */}
+                            <div
+                                key={`${entry.name}-${index}`}
+                                onClick={() => handlePlayerClick(entry)}
+                                className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 overflow-hidden cursor-pointer active:scale-95 ${isMe ? 'border-orange-500 shadow-xl scale-[1.02] z-10' : 'border-white/5 hover:border-white/20'}`}
+                            >
                                 {selectedCard ? (
                                     <>
                                         <div
@@ -228,23 +249,23 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 )}
 
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
-                                    <div className="w-8 flex-shrink-0 flex justify-center">
+                                    <div className="w-8 flex-shrink-0 flex justify-center text-left">
                                         {index < 3 ? (
                                             <i className={`fa-solid fa-crown text-2xl ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : 'text-orange-400'}`}></i>
                                         ) : (
-                                            <span className="text-white/30 font-black italic text-lg">#{index + 1}</span>
+                                            <span className="text-white/30 font-black italic text-lg text-left">#{index + 1}</span>
                                         )}
                                     </div>
-                                    <div className="flex flex-col flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
+                                    <div className="flex flex-col flex-1 min-w-0 text-left">
+                                        <div className="flex items-center gap-2 mb-1 text-left">
                                             <div className={`px-2 py-0.5 rounded-full border text-[7px] font-black tracking-widest uppercase ${titleInfo.border} ${titleInfo.style}`}>
                                                 {titleInfo.title}
                                             </div>
                                             <span className="text-[10px] font-bold text-white/20 whitespace-nowrap">• {getTimeAgo(entry.created_at)}</span>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-lg font-black text-white tracking-tight break-words line-clamp-1 uppercase max-w-[150px]">
+                                        <div className="flex items-center gap-2 text-left">
+                                            <span className="text-lg font-black text-white tracking-tight break-words line-clamp-1 uppercase max-w-[150px] text-left">
                                                 {entry.name}
                                             </span>
                                             {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">VOCÊ</span>}
@@ -263,6 +284,83 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* MODAL DE PERFIL DO JOGADOR */}
+            {selectedPlayer && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300">
+                    <div className="w-full max-w-sm bg-neutral-900 border-2 border-white/10 rounded-[40px] p-8 relative shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* DECORAÇÃO BACKGROUND */}
+                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-orange-500/20 to-transparent"></div>
+
+                        <button onClick={() => setSelectedPlayer(null)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors z-20">
+                            <i className="fa-solid fa-xmark text-xl"></i>
+                        </button>
+
+                        <div className="relative z-10 text-center flex flex-col items-center">
+                            <div className="mb-4">
+                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Dossiê do Jogador</span>
+                                <h2 className="text-3xl font-black italic tracking-tighter uppercase leading-tight text-white">{selectedPlayer.name}</h2>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 w-full mb-8">
+                                <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
+                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">XP Account</span>
+                                    <span className="text-xl font-black text-white tabular-nums">{(selectedPlayer.total_xp || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
+                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">High Score</span>
+                                    <span className="text-xl font-black text-orange-500 tabular-nums">{(selectedPlayer.score || 0).toLocaleString()}</span>
+                                </div>
+                                <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
+                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Partidas</span>
+                                    <span className="text-xl font-black text-emerald-400 tabular-nums">{selectedPlayer.games_played || 0}</span>
+                                </div>
+                                <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
+                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Patente</span>
+                                    <span className={`text-[10px] font-black uppercase tracking-tight py-1 px-3 rounded-full border mt-1 ${getPlayerTitle(selectedPlayer.total_xp).border} ${getPlayerTitle(selectedPlayer.total_xp).style}`}>
+                                        {getPlayerTitle(selectedPlayer.total_xp).title}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="w-full text-left">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Coleção de Cards</h4>
+                                    <span className="text-[10px] font-black text-orange-500">{ownedCards.length} / {CARDS.filter(c => c.isReady).length}</span>
+                                </div>
+
+                                {profileLoading ? (
+                                    <div className="flex justify-center py-10 opacity-20">
+                                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-4 gap-2 max-h-[30vh] overflow-y-auto no-scrollbar pb-4">
+                                        {CARDS.filter(c => c.isReady).map(card => {
+                                            const isOwned = ownedCards.includes(card.id);
+                                            return (
+                                                <div
+                                                    key={card.id}
+                                                    className={`aspect-[2/3] rounded-xl border-2 transition-all relative overflow-hidden ${isOwned ? 'border-orange-500/50 bg-orange-500/10' : 'border-white/5 bg-white/5 grayscale opacity-20'}`}
+                                                    title={card.name}
+                                                >
+                                                    {isOwned && (
+                                                        <div
+                                                            className="absolute inset-0 bg-cover bg-center"
+                                                            style={{ backgroundImage: card.image }}
+                                                        />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <button onClick={() => setSelectedPlayer(null)} className="w-full mt-6 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl z-20">VOLTAR AO RANKING</button>
+                    </div>
                 </div>
             )}
         </div>
