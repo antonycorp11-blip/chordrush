@@ -238,9 +238,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 {selectedCard ? (
                                     <>
-                                        {/* CARD BACKGROUND - ZOOM ÉPICO PARA ELIMINAR MOLDURAS INTERNAS */}
+                                        {/* CARD BACKGROUND - ZOOM BALANCEADO PARA INSTRUMENTOS ROBUSTOS */}
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-90 transition-all duration-700 scale-[2.5] brightness-110 grayscale-[0.1]"
+                                            className="absolute inset-0 bg-cover bg-[center_right_25%] opacity-90 transition-all duration-700 scale-[1.8] brightness-110 grayscale-[0.05]"
                                             style={{ backgroundImage: selectedCard.image }}
                                         />
                                         {/* GRADIENTE FOCADO NA LEITURA (DA ESQUERDA PARA DIREITA) */}
@@ -249,9 +249,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         {/* BRILHO LATERAL DE ACORDO COM A RARIDADE */}
                                         <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20">
                                             <div className={`h-full ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400 shadow-[4px_0_20px_rgba(250,204,21,0.6)]' :
-                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500 shadow-[4px_0_20px_rgba(249,115,22,0.6)]' :
-                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400 shadow-[4px_0_20px_rgba(34,211,238,0.6)]' :
-                                                            'bg-blue-400'
+                                                selectedCard.rarity === 'épico' ? 'bg-orange-500 shadow-[4px_0_20px_rgba(249,115,22,0.6)]' :
+                                                    selectedCard.rarity === 'raro' ? 'bg-cyan-400 shadow-[4px_0_20px_rgba(34,211,238,0.6)]' :
+                                                        'bg-blue-400'
                                                 }`}></div>
                                         </div>
                                     </>
