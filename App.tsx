@@ -238,7 +238,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.4.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.5.0</p>
               </div>
             </div>
 
@@ -292,8 +292,18 @@ const App: React.FC = () => {
               const progress = getNextLevelProgress(stats.totalXP);
               return (
                 <div
-                  className="w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 bg-neutral-900/80 border-white/10"
+                  className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 ${selectedEffectCard ? 'border-orange-500/50' : 'bg-neutral-900/80 border-white/10'}`}
                 >
+                  {/* BACKGROUND DO CARD EQUIPADO */}
+                  {selectedEffectCard && (
+                    <>
+                      <div
+                        className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]"
+                        style={{ backgroundImage: selectedEffectCard.image }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-black" />
+                    </>
+                  )}
                   <div className="flex flex-col relative z-10 min-w-0 flex-1">
                     <div className={`self-start px-2 py-0.5 rounded-full border mb-1 ${title.border}`}>
                       <span className={`text-[7px] uppercase font-black tracking-widest ${title.style}`}>

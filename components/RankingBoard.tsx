@@ -3,6 +3,7 @@ import React from 'react';
 import { supabase, getDeviceId } from '../utils/supabaseClient';
 import { RankingEntry } from '../types';
 import { getPlayerTitle, getNextLevelProgress } from '../utils/titles';
+import { CARDS } from '../constants/cards';
 
 interface RankingBoardProps {
     onBack: () => void;
@@ -17,11 +18,25 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const fetchRanking = async () => {
         try {
+            // 1. CALIBRAÇÃO: Pegar o score mais recente do mundo (independente de ser baixo ou alto)
+            const { data: latestData } = await supabase
+                .from('scores')
+                .select('created_at')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (latestData?.[0]) {
+                const serverLatest = new Date(latestData[0].created_at).getTime();
+                const localNow = Date.now();
+                setDrift(localNow - serverLatest);
+            }
+
+            // 2. RANKING: Pegar os MAIORES scores (não os mais recentes)
             const { data: scoresData, error: sError } = await supabase
                 .from('scores')
                 .select('player_id, score, created_at')
-                .order('created_at', { ascending: false }) // Pegamos o mais recente primeiro para calibrar
-                .limit(200);
+                .order('score', { ascending: false })
+                .limit(500); // Pegamos bastante para consolidar bem
 
             if (sError) throw sError;
             if (!scoresData || scoresData.length === 0) {
@@ -30,19 +45,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 return;
             }
 
-            // CALIBRAÇÃO DO RELÓGIO:
-            // Pegamos o registro mais recente do servidor e comparamos com o relógio local.
-            // Se o servidor diz que foi "agora" mas nosso relógio diz que foi 25 min atrás, 
-            // salvamos esse 'drift' para descontar em todos os outros.
-            const serverLatest = new Date(scoresData[0].created_at).getTime();
-            const localNow = Date.now();
-            const currentDrift = localNow - serverLatest;
-            setDrift(currentDrift);
-
-            // Re-order por score para o ranking
-            const sortedByScore = [...scoresData].sort((a, b) => b.score - a.score);
-
-            const playerIds = Array.from(new Set(sortedByScore.map(s => s.player_id)));
+            const playerIds = Array.from(new Set(scoresData.map(s => s.player_id)));
 
             const { data: playersData, error: pError } = await supabase
                 .from('players')
@@ -55,7 +58,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
             playersData?.forEach(p => playersMap.set(p.id, p));
 
             const consolidatedMap = new Map();
-            sortedByScore.forEach(s => {
+            scoresData.forEach(s => {
                 const player = playersMap.get(s.player_id);
                 if (!player || !player.name) return;
 
@@ -80,12 +83,16 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         existing.lastPlayedAt = s.created_at;
                     }
                     existing.xp = Math.max(existing.xp, player.xp || 0);
+                    // Atualiza o card se o player record for o mais recente
+                    if (sTime >= existing.lastPlayedTime) {
+                        existing.selected_card_id = player.selected_card_id;
+                    }
                 }
             });
 
             const finalRanking = Array.from(consolidatedMap.values())
                 .sort((a, b) => b.bestScore - a.bestScore)
-                .slice(0, 50)
+                .slice(0, 100)
                 .map(item => ({
                     device_id: item.device_id,
                     name: item.name,
@@ -123,10 +130,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
         const past = new Date(dateString).getTime();
-
-        // Aplicamos o DRIFT para normalizar o relógio do servidor com o do celular
         const adjustedNow = now - drift;
-        const diff = Math.floor((adjustedNow - past) / 1000);
+        const diff = Math.max(0, Math.floor((adjustedNow - past) / 1000));
 
         if (diff < 30) return 'Agora';
         if (diff < 60) return `${diff}s`;
@@ -143,14 +148,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V2.3.0 • Auto-Calibrado</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V2.5.0 • Live Sync</span>
                 </div>
             </div>
 
             {loading && ranking.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
                     <div className="w-10 h-10 border-[3px] border-orange-500/10 border-t-orange-500 rounded-full animate-spin"></div>
-                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Sincronizando...</span>
+                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Sincronizando Ranking...</span>
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
@@ -159,9 +164,24 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         const playerXP = entry.xp || 0;
                         const titleInfo = getPlayerTitle(playerXP);
                         const progress = getNextLevelProgress(playerXP);
+                        // Achar o card selecionado
+                        const selectedCard = CARDS.find(c => c.id === entry.selected_card_id);
 
                         return (
-                            <div key={`${entry.name}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 ${isMe ? 'bg-neutral-800 border-orange-500 shadow-xl scale-[1.02] z-10' : 'bg-neutral-900/60 border-white/5'}`}>
+                            <div key={`${entry.name}-${index}`} className={`relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 overflow-hidden ${isMe ? 'border-orange-500 shadow-xl scale-[1.02] z-10' : 'border-white/5'}`}>
+                                {/* BACKGROUND DO CARD (Se houver) */}
+                                {selectedCard ? (
+                                    <>
+                                        <div
+                                            className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]"
+                                            style={{ backgroundImage: selectedCard.image }}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-black" />
+                                    </>
+                                ) : (
+                                    <div className={`absolute inset-0 ${isMe ? 'bg-neutral-800' : 'bg-neutral-900/60'}`} />
+                                )}
+
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-8 flex-shrink-0 flex justify-center">
                                         {index < 3 ? (
@@ -185,7 +205,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                             {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">VOCÊ</span>}
                                         </div>
 
-                                        <div className="w-24 h-1 bg-white/5 rounded-full mt-2 overflow-hidden flex">
+                                        <div className="w-24 h-1 bg-white/10 rounded-full mt-2 overflow-hidden flex">
                                             <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${Math.max(2, progress)}%` }}></div>
                                         </div>
                                     </div>
