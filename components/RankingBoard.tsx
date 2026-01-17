@@ -22,99 +22,34 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const fetchRanking = async () => {
         try {
-            const { data: latestData } = await supabase
-                .from('scores')
-                .select('created_at')
-                .order('created_at', { ascending: false })
-                .limit(1);
-
-            if (latestData?.[0]) {
-                const serverLatest = new Date(latestData[0].created_at).getTime();
-                const localNow = Date.now();
-                setDrift(localNow - serverLatest);
-            }
-
-            // Pegar o início da semana (Segunda-feira 00:00)
-            const d = new Date();
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            const startOfWeek = new Date(d.setDate(diff));
-            startOfWeek.setHours(0, 0, 0, 0);
-
-            const { data: scoresData, error: sError } = await supabase
-                .from('scores')
-                .select('player_id, score, created_at')
-                .gte('created_at', startOfWeek.toISOString())
+            // Buscamos diretamente da VIEW semanal que criamos no SQL
+            const { data: rankingData, error: rError } = await supabase
+                .from('weekly_ranking_v2')
+                .select('*')
                 .order('score', { ascending: false })
-                .limit(200);
+                .limit(100);
 
-            if (sError) throw sError;
-            if (!scoresData || scoresData.length === 0) {
+            if (rError) throw rError;
+
+            if (!rankingData || rankingData.length === 0) {
                 setRanking([]);
-                setLoading(false);
-                return;
-            }
-
-            const playerIds = Array.from(new Set(scoresData.map(s => s.player_id)));
-
-            const { data: playersData, error: pError } = await supabase
-                .from('players')
-                .select('id, device_id, name, acorde_coins, accumulated_xp, selected_card_id, games_played')
-                .in('id', playerIds);
-
-            if (pError) throw pError;
-
-            const playersMap = new Map();
-            playersData?.forEach(p => playersMap.set(p.id, p));
-
-            const consolidatedMap = new Map();
-            scoresData.forEach(s => {
-                const player = playersMap.get(s.player_id);
-                if (!player) return;
-
-                const sTime = new Date(s.created_at).getTime();
-                const existing = consolidatedMap.get(s.player_id);
-
-                if (!existing) {
-                    consolidatedMap.set(s.player_id, {
-                        id: player.id,
-                        name: player.name || 'JOGADOR ANÔNIMO',
-                        device_id: player.device_id,
-                        acorde_coins: player.acorde_coins || 0,
-                        accumulated_xp: player.accumulated_xp || 0,
-                        selected_card_id: player.selected_card_id,
-                        games_played: player.games_played || 0,
-                        bestScore: s.score,
-                        lastPlayedTime: sTime,
-                        lastPlayedAt: s.created_at
-                    });
-                } else {
-                    if (s.score > existing.bestScore) existing.bestScore = s.score;
-                    if (sTime > existing.lastPlayedTime) {
-                        existing.lastPlayedTime = sTime;
-                        existing.lastPlayedAt = s.created_at;
-                    }
-                }
-            });
-
-            const finalRanking = Array.from(consolidatedMap.values())
-                .sort((a, b) => b.bestScore - a.bestScore)
-                .slice(0, 100)
-                .map(item => ({
-                    id: item.id,
+            } else {
+                // Mapear os dados da VIEW para o formato esperado pelo componente
+                const formattedRanking = rankingData.map(item => ({
+                    id: item.player_id,
                     device_id: item.device_id,
-                    name: item.name,
-                    acorde_coins: item.acorde_coins,
-                    accumulated_xp: item.accumulated_xp,
-                    score: item.bestScore,
-                    games_played: item.games_played,
-                    created_at: item.lastPlayedAt,
+                    name: item.name || 'JOGADOR ANÔNIMO',
+                    acorde_coins: item.acorde_coins || 0,
+                    accumulated_xp: item.accumulated_xp || 0,
+                    score: item.score,
+                    games_played: item.games_played || 0,
+                    created_at: item.created_at,
                     selected_card_id: item.selected_card_id
                 }));
-
-            setRanking(finalRanking as any);
+                setRanking(formattedRanking as any);
+            }
         } catch (err) {
-            console.error('Erro ao processar ranking:', err);
+            console.error('Erro ao processar ranking semanal:', err);
         } finally {
             setLoading(false);
         }

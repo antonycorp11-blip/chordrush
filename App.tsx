@@ -57,6 +57,7 @@ const App: React.FC = () => {
   const [clefReward, setClefReward] = useState<any>(null);
   const [activeOpeningMissionId, setActiveOpeningMissionId] = useState<string | null>(null);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
+  const [isSavingScore, setIsSavingScore] = useState(false);
   const [missionProgress, setMissionProgress] = useState({
     bemol: 0,
     sustenido: 0,
@@ -310,8 +311,9 @@ const App: React.FC = () => {
 
     // Chamada Única e Segura: Agora score e XP são enviados juntos
     // O Banco de Dados vai validar se o XP faz sentido para esse Score
+    setIsSavingScore(true);
     const deviceId = getDeviceId();
-    const { error } = await supabase.rpc('secure_end_game', {
+    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v2', {
       device_id_param: deviceId,
       score_param: finalScore,
       level_param: finalLevel,
@@ -319,10 +321,11 @@ const App: React.FC = () => {
     });
 
     if (error) {
-      console.error('Tentativa de manipulação detectada ou erro de rede:', error.message);
-    } else {
-      console.log('Dados salvos com segurança máxima.');
+      console.error('Erro ao salvar score:', error.message);
+    } else if (saveResult) {
+      console.log('Dados salvos com sucesso.');
     }
+    setIsSavingScore(false);
   };
 
   const handleAnswer = (selectedNote: NoteName) => {
@@ -412,7 +415,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.7.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.8.0</p>
               </div>
             </div>
 
@@ -754,7 +757,17 @@ const App: React.FC = () => {
               <div className="w-full space-y-3">
                 <button onClick={() => startNewGame(mode)} className="w-full bg-orange-500 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700 uppercase"> Jogar Novamente </button>
                 <button onClick={() => setGameState(GameState.MENU)} className="w-full bg-white/10 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all border-b-4 border-white/5 uppercase"> Voltar ao Menu </button>
-                <button onClick={() => setGameState(GameState.RANKING)} className="w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2"> <i className="fa-solid fa-trophy"></i> Ranking Global </button>
+                <button
+                  onClick={() => setGameState(GameState.RANKING)}
+                  disabled={isSavingScore}
+                  className={`w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2 ${isSavingScore ? 'opacity-50' : ''}`}
+                >
+                  {isSavingScore ? (
+                    <><div className="w-3 h-3 border-2 border-yellow-500/20 border-t-yellow-500 rounded-full animate-spin"></div> Salvando...</>
+                  ) : (
+                    <><i className="fa-solid fa-trophy"></i> Ranking Semanal</>
+                  )}
+                </button>
               </div>
             </div>
           </div>
