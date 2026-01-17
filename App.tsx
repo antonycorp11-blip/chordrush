@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '5.2.0';
+      const currentVersion = '5.3.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '5.2.0');
+    localStorage.setItem('chordRush_version', '5.3.0');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Motor Gráfico V2</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V5.2.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Ornamentos Reais</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V5.3.0</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-yellow-400/10 rounded-2xl flex items-center justify-center text-yellow-300 border border-yellow-400/20">
-                  <i className="fa-solid fa-burst text-xl"></i>
+                  <i className="fa-solid fa-layer-group text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">SVG Solar Flare</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Diga adeus às linhas simples. Agora os itens lendários emitem **labaredas de luz reais** geradas via vetores de alta definição.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Gráficos Frontais</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Os brilhos e faíscas agora aparecem <b>por cima</b> da guitarra, criando um efeito de profundidade 3D real.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-white/10 rounded-2xl flex items-center justify-center text-white border border-white/20">
-                  <i className="fa-solid fa-wand-sparkles text-xl"></i>
+                  <i className="fa-solid fa-wand-magic text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Partículas High-Res</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">As estrelas e faíscas foram redesenhadas para serem maiores, mais brilhantes e com efeitos de animação orgânica.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Efeito Sheen (Ouro)</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Adicionamos uma varredura de luz diagonal que corre pelo banner, simulando o reflexo do ouro.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-500/20">
-                  <i className="fa-solid fa-microchip text-xl"></i>
+                  <i className="fa-solid fa-crown text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Otimização de Performance</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Mesmo com gráficos superiores, o efeito foi contido para não sobrecarregar o seu dispositivo.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Luminosidade Máxima</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">A aura de fundo foi triplicada para garantir que o primeiro lugar seja inconfundível.</p>
                 </div>
               </div>
             </div>
