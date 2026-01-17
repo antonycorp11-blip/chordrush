@@ -110,7 +110,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '6.3.0';
+      const currentVersion = '7.2.5';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -120,7 +120,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '6.3.0');
+    localStorage.setItem('chordRush_version', '7.2.5');
     setShowChangelog(false);
   };
 
@@ -813,39 +813,39 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>
               <div className="mb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Polimento de Elite</span>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V6.1.0</span></h2>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Nova Temporada</span>
+                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.2.5</span></h2>
               </div>
               <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
                 <div className="flex gap-4">
                   <div className="w-10 h-10 flex-shrink-0 bg-yellow-400/10 rounded-2xl flex items-center justify-center text-yellow-300 border border-yellow-400/20">
-                    <i className="fa-solid fa-wand-magic-sparkles text-xl"></i>
+                    <i className="fa-solid fa-trophy text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Efeito Backlight</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">O efeito especial agora roda **por trás** do card, criando um brilho de borda imponente sem atrapalhar a leitura do seu nome.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ranking Blindado</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Implementamos o motor **V5.1** no servidor. Agora, todos os seus recordes são validados e salvos instantaneamente, sem risco de perda ou erro de conexão.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-white/10 rounded-2xl flex items-center justify-center text-white border border-white/20">
-                    <i className="fa-solid fa-compress text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 border border-red-500/20">
+                    <i className="fa-solid fa-rotate text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Área Refinada</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Reduzimos o espaço de ocupação do efeito para que ele fique mais elegante e focado no seu ranking.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Reset Técnico</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Para estabilizar o novo sistema, zeramos o Ranking Semanal. **Sua coleção de cards, títulos e moedas não foram tocados.** É hora de conquistar o topo de novo!</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500 border border-amber-500/20">
-                    <i className="fa-solid fa-eye text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-500 border border-green-500/20">
+                    <i className="fa-solid fa-check-double text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Legibilidade Pró</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Ajustamos a opacidade e as camadas (z-index) para que a Supernova brilhe sem esconder os números.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Feedback em Tempo Real</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Ao terminar uma partida, você receberá uma confirmação visual de que seu score foi registrado com sucesso na nuvem.</p>
                   </div>
                 </div>
               </div>
-              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">VAMOS JOGAR!</button>
+              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">BORA PRO TOPO!</button>
             </div>
           </div>
         )
