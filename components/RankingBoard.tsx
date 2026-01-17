@@ -77,24 +77,16 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 key={index}
                                 className={`
                                     relative flex items-center justify-between p-6 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
-                                    ${isMe ? 'scale-[1.02] z-20 ring-4 ring-orange-500/20' : 'scale-100'}
-                                    ${card ? 'border-white/20' : isMe ? 'bg-orange-600/20 border-orange-500/50' : 'bg-white/5 border-white/10'}
+                                    ${isMe ? 'scale-[1.02] z-20 ring-4 ring-orange-500/20 bg-orange-600/20 border-orange-500/50' : 'scale-100 bg-white/5 border-white/10'}
                                 `}
-                                style={card ? {
-                                    backgroundImage: `${card.image}`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center'
-                                } : {}}
                             >
-                                {/* Overlay Escuro para Legibilidade Máxima */}
-                                {card && <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px] pointer-events-none"></div>}
 
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-10 flex-shrink-0 flex justify-center">
                                         {isTop3 ? <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i> : <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <span className={`text-xl break-words pr-2 ${getNameFontStyle(entry.selected_card_id)}`}>
+                                        <span className={`text-xl break-words pr-2 ${getNameFontStyle(undefined)}`}>
                                             {entry.name}
                                         </span>
                                         <div className="flex items-center gap-2">
