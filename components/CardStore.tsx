@@ -53,8 +53,29 @@ export const CardStore: React.FC<CardStoreProps> = ({
         }
     };
 
+    const resetExperience = async () => {
+        if (!confirm('DESEJA RESETAR SEUS CARDS? (Ação apenas para teste)')) return;
+        try {
+            const deviceId = getDeviceId();
+            const { data: playerData } = await supabase
+                .from('players')
+                .select('id')
+                .eq('device_id', deviceId)
+                .single();
+
+            if (playerData) {
+                await supabase.from('player_cards').delete().eq('player_id', playerData.id);
+                setOwnedCards([]);
+                onCardSelect(''); // Unequip everything
+                alert('Cards resetados!');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const buyCard = async (card: ExtendedCard) => {
-        if (!card.isReady) return; // Não dá pra comprar o que não está pronto
+        if (!card.isReady) return;
         if (card.price > 0 && totalXP < card.price) return;
 
         try {
@@ -94,7 +115,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
             const deviceId = getDeviceId();
             const { error } = await supabase
                 .from('players')
-                .update({ selected_card_id: cardId })
+                .update({ selected_card_id: cardId || null })
                 .eq('device_id', deviceId);
 
             if (error) throw error;
@@ -152,6 +173,12 @@ export const CardStore: React.FC<CardStoreProps> = ({
                             {r === 'all' ? 'Ver Todos' : r}
                         </button>
                     ))}
+                    <button
+                        onClick={resetExperience}
+                        className="px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase bg-red-500/10 border-2 border-red-500/20 text-red-500 whitespace-nowrap"
+                    >
+                        RESET CARDS
+                    </button>
                 </div>
 
                 {loading ? (
@@ -161,6 +188,26 @@ export const CardStore: React.FC<CardStoreProps> = ({
                     </div>
                 ) : (
                     <div className="flex-1 overflow-y-auto pr-2 no-scrollbar space-y-4 pb-10">
+
+                        {/* OPÇÃO DE NENHUM CARD */}
+                        <div
+                            onClick={() => selectCard('')}
+                            className={`
+                                relative w-full p-6 rounded-[32px] border-2 transition-all duration-300 cursor-pointer overflow-hidden
+                                ${!selectedCardId ? 'border-orange-500 scale-[1.03] bg-neutral-800' : 'border-white/5 bg-neutral-900/40'}
+                            `}
+                        >
+                            <div className="flex items-center justify-between relative z-10">
+                                <div className="flex flex-col">
+                                    <span className="text-white/40 font-black uppercase text-[10px] tracking-widest mb-1">Padrão</span>
+                                    <h3 className="text-white font-black text-2xl uppercase tracking-tighter italic">Nenhum Card</h3>
+                                </div>
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 ${!selectedCardId ? 'bg-orange-500 border-white text-white' : 'bg-black/40 border-white/20 text-white/40'}`}>
+                                    <i className={`fa-solid ${!selectedCardId ? 'fa-check text-xl' : 'fa-ban'}`}></i>
+                                </div>
+                            </div>
+                        </div>
+
                         {filteredCards.map(card => {
                             const isOwned = ownedCards.includes(card.id);
                             const isSelected = selectedCardId === card.id;
@@ -190,7 +237,6 @@ export const CardStore: React.FC<CardStoreProps> = ({
                                 >
                                     <div className="absolute inset-0 bg-black/50 backdrop-blur-[0.5px]"></div>
 
-                                    {/* SOBREPOSIÇÃO PARA CARDS EM DESENVOLVIMENTO */}
                                     {!isReady && (
                                         <div className="absolute inset-0 z-20 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4">
                                             <div className="bg-orange-500 text-white font-black text-[9px] px-3 py-1 rounded-full uppercase tracking-widest mb-2 shadow-lg">

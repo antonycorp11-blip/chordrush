@@ -81,7 +81,7 @@ const App: React.FC = () => {
       }
 
       // Check Version for Changelog
-      const currentVersion = '2.6.0';
+      const currentVersion = '2.6.1';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -91,7 +91,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '2.6.0');
+    localStorage.setItem('chordRush_version', '2.6.1');
     setShowChangelog(false);
   };
 
@@ -251,7 +251,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.6.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.6.1</p>
               </div>
             </div>
 
@@ -448,7 +448,7 @@ const App: React.FC = () => {
 
             <div className="mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">PATCH NOTES <span className="text-white/20">V2.6.0</span></h2>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">PATCH NOTES <span className="text-white/20">V2.6.1</span></h2>
             </div>
 
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
