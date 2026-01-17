@@ -11,6 +11,7 @@ interface RankingBoardProps {
 
 export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const [ranking, setRanking] = React.useState<RankingEntry[]>([]);
+    const [lastSync, setLastSync] = React.useState<Date | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [now, setNow] = React.useState(Date.now());
     const [drift, setDrift] = React.useState(0);
@@ -21,8 +22,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const deviceId = getDeviceId();
 
     const fetchRanking = async () => {
+        setLoading(true);
         try {
-            // Buscamos diretamente da nova RPC V3 que é mais performática e filtrada por 7 dias
             const { data: rankingData, error: rError } = await supabase
                 .rpc('get_weekly_ranking_v3');
 
@@ -44,8 +45,12 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 }));
                 setRanking(formattedRanking);
             }
+            setLastSync(new Date());
+            // Add alert on success for ranking refresh
+            // alert('Ranking atualizado com sucesso!'); // This might be too intrusive, consider a toast or less aggressive feedback
         } catch (err) {
             console.error('Erro ao processar ranking V3:', err);
+            alert('Falha ao carregar ranking. Tente novamente.');
         } finally {
             setLoading(false);
         }
@@ -117,7 +122,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     </button>
                     <div className="flex flex-col">
                         <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">SEMANAL</span></h2>
-                        <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic italic">V6.9.0 • 7 Dias Ativos</span>
+                        <span className="text-[7px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">
+                            {lastSync ? `Atualizado: ${lastSync.toLocaleTimeString()}` : 'V7.0.0 • Reset Segunda 00:00'}
+                        </span>
                     </div>
                 </div>
             </div>
