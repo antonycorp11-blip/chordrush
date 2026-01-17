@@ -6,7 +6,7 @@ import { CARDS, ExtendedCard } from '../constants/cards';
 
 interface CardStoreProps {
     onBack: () => void;
-    totalXP: number;
+    acordeCoins: number;
     onXPUpdate: (newXP: number) => void;
     accumulatedXP: number; // XP Lifetime
     selectedCardId?: string;
@@ -15,7 +15,7 @@ interface CardStoreProps {
 
 export const CardStore: React.FC<CardStoreProps> = ({
     onBack,
-    totalXP, // Este é o SALDO
+    acordeCoins, // Este é o SALDO
     onXPUpdate,
     accumulatedXP,
     selectedCardId,
@@ -58,7 +58,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
 
     const buyCard = async (card: ExtendedCard) => {
         if (!card.isReady) return;
-        if (card.price > 0 && totalXP < card.price) {
+        if (card.price > 0 && acordeCoins < card.price) {
             alert('XP insuficiente para comprar este card!');
             return;
         }
@@ -76,7 +76,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
             if (buyError) throw buyError;
 
             // Atualiza o saldo localmente para refletir a compra
-            onXPUpdate(totalXP - card.price);
+            onXPUpdate(acordeCoins - card.price);
             setOwnedCards(prev => [...prev, card.id]);
             alert(`Card "${card.name}" adquirido com sucesso!`);
         } catch (err: any) {
@@ -132,7 +132,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
                         </h2>
                         <div className="mt-2 bg-white/5 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
                             <i className="fa-solid fa-coins text-[10px] text-yellow-500"></i>
-                            <span className="text-[11px] font-black text-white tabular-nums">{totalXP.toLocaleString()} <span className="text-[8px] opacity-40 uppercase">Coins</span></span>
+                            <span className="text-[11px] font-black text-white tabular-nums">{acordeCoins.toLocaleString()} <span className="text-[8px] opacity-40 uppercase">Coins</span></span>
                         </div>
                     </div>
                 </div>
@@ -186,7 +186,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
                                 const isSelected = selectedCardId === card.id;
                                 const isReady = card.isReady;
                                 const styles = getRarityStyles(card.rarity);
-                                const canAfford = totalXP >= card.price;
+                                const canAfford = acordeCoins >= card.price;
 
                                 return (
                                     <div

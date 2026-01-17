@@ -10,7 +10,7 @@ export interface Chord {
 export interface GameStats {
   playerName: string;
   highScore: number;
-  totalXP: number;      // Saldo de Acorde Coins (para gastar na loja)
+  acordeCoins: number;      // Saldo (para gastar na loja)
   accumulatedXP: number; // XP de Patente (acumulado da vida)
   selectedCardId?: string;
 }
@@ -51,8 +51,8 @@ export interface RankingEntry {
   level: number;
   device_id: string;
   selected_card_id?: string;
-  xp: number;             // Acorde Coins (Saldo)
-  total_xp: number;       // Patente XP (Acumulado)
+  acorde_coins: number;             // Saldo
+  accumulated_xp: number;       // Patente XP
   created_at: string;
 }
 

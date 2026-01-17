@@ -30,7 +30,7 @@ const App: React.FC = () => {
         accumulatedXP: parsed.accumulatedXP || 0
       };
     }
-    return { playerName: '', highScore: 0, totalXP: 0, accumulatedXP: 0 };
+    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0 };
   });
 
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
@@ -87,7 +87,7 @@ const App: React.FC = () => {
         const deviceId = getDeviceId();
         const { data } = await supabase
           .from('players')
-          .select('name, selected_card_id, xp, total_xp')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp')
           .eq('device_id', deviceId)
           .maybeSingle();
 
@@ -96,8 +96,8 @@ const App: React.FC = () => {
             ...prev,
             playerName: data.name || prev.playerName,
             selectedCardId: data.selected_card_id,
-            totalXP: (data.xp !== null && data.xp !== undefined) ? data.xp : prev.totalXP,
-            accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
+            acordeCoins: (data.acorde_coins !== null && data.acorde_coins !== undefined) ? data.acorde_coins : prev.acordeCoins,
+            accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP
           }));
 
           // Buscar missões diárias após o sync do perfil
@@ -301,8 +301,7 @@ const App: React.FC = () => {
     setStats(prev => ({
       ...prev,
       highScore: Math.max(prev.highScore, finalScore),
-      // Conversão de 10% do sessionXP em Acorde Coins (Saldo)
-      totalXP: prev.totalXP + Math.floor(finalXP * 0.1),
+      acordeCoins: prev.acordeCoins + Math.floor(finalXP * 0.1),
       accumulatedXP: (prev.accumulatedXP || 0) + finalXP
     }));
 
@@ -413,7 +412,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.5.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.6.0</p>
               </div>
             </div>
 
@@ -544,7 +543,7 @@ const App: React.FC = () => {
                               <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">Saldo Atual</span>
                               <div className="flex items-center gap-1">
                                 <i className="fa-solid fa-coins text-[8px] text-yellow-500"></i>
-                                <span className="text-xs font-black text-white tracking-tighter">{(stats.totalXP || 0).toLocaleString()} <span className="text-[6px] opacity-30">Coins</span></span>
+                                <span className="text-xs font-black text-white tracking-tighter">{(stats.acordeCoins || 0).toLocaleString()} <span className="text-[6px] opacity-30">Coins</span></span>
                               </div>
                             </div>
                           </div>
@@ -768,8 +767,8 @@ const App: React.FC = () => {
         gameState === GameState.STORE && (
           <CardStore
             onBack={() => setGameState(GameState.MENU)}
-            totalXP={stats.totalXP}
-            onXPUpdate={(newXP) => setStats(prev => ({ ...prev, totalXP: newXP }))}
+            acordeCoins={stats.acordeCoins}
+            onXPUpdate={(newXP) => setStats(prev => ({ ...prev, acordeCoins: newXP }))}
             accumulatedXP={stats.accumulatedXP || 0}
             selectedCardId={stats.selectedCardId}
             onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}

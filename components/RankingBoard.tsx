@@ -51,7 +51,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
             const { data: playersData, error: pError } = await supabase
                 .from('players')
-                .select('id, device_id, name, xp, total_xp, selected_card_id, games_played')
+                .select('id, device_id, name, acorde_coins, accumulated_xp, selected_card_id, games_played')
                 .in('id', playerIds);
 
             if (pError) throw pError;
@@ -62,19 +62,18 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
             const consolidatedMap = new Map();
             scoresData.forEach(s => {
                 const player = playersMap.get(s.player_id);
-                if (!player || !player.name) return;
+                if (!player) return;
 
-                const nameKey = player.name.trim().toUpperCase();
                 const sTime = new Date(s.created_at).getTime();
-                const existing = consolidatedMap.get(nameKey);
+                const existing = consolidatedMap.get(s.player_id);
 
                 if (!existing) {
-                    consolidatedMap.set(nameKey, {
+                    consolidatedMap.set(s.player_id, {
                         id: player.id,
-                        name: player.name,
+                        name: player.name || 'JOGADOR ANÔNIMO',
                         device_id: player.device_id,
-                        xp: player.xp || 0,
-                        total_xp: player.total_xp || player.xp || 0,
+                        acorde_coins: player.acorde_coins || 0,
+                        accumulated_xp: player.accumulated_xp || 0,
                         selected_card_id: player.selected_card_id,
                         games_played: player.games_played || 0,
                         bestScore: s.score,
@@ -87,8 +86,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         existing.lastPlayedTime = sTime;
                         existing.lastPlayedAt = s.created_at;
                     }
-                    existing.xp = player.xp || 0;
-                    existing.total_xp = player.total_xp || player.xp || 0;
                 }
             });
 
@@ -99,8 +96,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     id: item.id,
                     device_id: item.device_id,
                     name: item.name,
-                    xp: item.xp,
-                    total_xp: item.total_xp,
+                    acorde_coins: item.acorde_coins,
+                    accumulated_xp: item.accumulated_xp,
                     score: item.bestScore,
                     games_played: item.games_played,
                     created_at: item.lastPlayedAt,
@@ -225,14 +222,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
-                        const playerXP = entry.total_xp || entry.xp || 0;
+                        const playerXP = entry.accumulated_xp || 0;
                         const titleInfo = getPlayerTitle(playerXP);
                         const progress = getNextLevelProgress(playerXP);
                         const selectedCard = CARDS.find(c => c.id === entry.selected_card_id);
 
                         return (
                             <div
-                                key={`${entry.name}-${index}`}
+                                key={entry.id}
                                 onClick={() => handlePlayerClick(entry)}
                                 className={`
                                     relative flex items-center justify-between p-5 rounded-[28px] border transition-all duration-300 cursor-pointer active:scale-95
@@ -356,7 +353,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             <div className="grid grid-cols-2 gap-3 w-full mb-8">
                                 <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
                                     <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">XP Account</span>
-                                    <span className="text-xl font-black text-white tabular-nums">{(selectedPlayer.total_xp || 0).toLocaleString()}</span>
+                                    <span className="text-xl font-black text-white tabular-nums">{(selectedPlayer.accumulated_xp || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
                                     <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">High Score</span>
@@ -368,8 +365,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 </div>
                                 <div className="bg-white/5 rounded-3xl p-4 border border-white/10 shadow-inner flex flex-col items-center">
                                     <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Patente</span>
-                                    <span className={`text-[10px] font-black uppercase tracking-tight py-1 px-3 rounded-full border mt-1 ${getPlayerTitle(selectedPlayer.total_xp).border} ${getPlayerTitle(selectedPlayer.total_xp).style}`}>
-                                        {getPlayerTitle(selectedPlayer.total_xp).title}
+                                    <span className={`text-[10px] font-black uppercase tracking-tight py-1 px-3 rounded-full border mt-1 ${getPlayerTitle(selectedPlayer.accumulated_xp || 0).border} ${getPlayerTitle(selectedPlayer.accumulated_xp || 0).style}`}>
+                                        {getPlayerTitle(selectedPlayer.accumulated_xp || 0).title}
                                     </span>
                                 </div>
                             </div>
