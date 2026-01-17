@@ -238,22 +238,39 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 {selectedCard ? (
                                     <>
-                                        {/* CARD BACKGROUND - ZOOM AJUSTADO PARA MOSTRAR TODO O INSTRUMENTO */}
+                                        {/* MECÂNICA DE BRILHO ÉPICO - AURA QUE PULA PRA FORA */}
+                                        {(selectedCard.rarity === 'épico' || selectedCard.rarity === 'lendário') && (
+                                            <div className={`absolute inset-0 z-0 animate-pulse transition-all duration-1000 blur-[20px] opacity-30 scale-110 ${selectedCard.rarity === 'épico' ? 'bg-orange-500' : 'bg-yellow-400'
+                                                }`} />
+                                        )}
+
+                                        {/* CARD BACKGROUND - ZOOM BALANCEADO */}
                                         <div
                                             className="absolute inset-0 bg-cover bg-center opacity-95 transition-all duration-700 scale-[1.1] brightness-110"
                                             style={{ backgroundImage: selectedCard.image }}
                                         />
-                                        {/* GRADIENTE FOCADO NA LEITURA (DA ESQUERDA PARA DIREITA) */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+                                        {/* GRADIENTE DE LEITURA */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent" />
 
-                                        {/* BRILHO LATERAL DE ACORDO COM A RARIDADE */}
-                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20">
-                                            <div className={`h-full ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400 shadow-[4px_0_20px_rgba(250,204,21,0.6)]' :
-                                                selectedCard.rarity === 'épico' ? 'bg-orange-500 shadow-[4px_0_20px_rgba(249,115,22,0.6)]' :
-                                                    selectedCard.rarity === 'raro' ? 'bg-cyan-400 shadow-[4px_0_20px_rgba(34,211,238,0.6)]' :
-                                                        'bg-blue-400'
-                                                }`}></div>
+                                        {/* BRILHO LATERAL CRISTALINO */}
+                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
+                                            <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400' :
+                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500' :
+                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
+                                                            'bg-blue-400'
+                                                }`}>
+                                                {/* EFEITO DE BRILHO INTERNO NA BARRA */}
+                                                <div className="absolute inset-0 bg-white/40 animate-[pulse_2s_infinite]"></div>
+                                            </div>
                                         </div>
+
+                                        {/* SOMBRA EXTERNA ÉPICA (PARA PULAR PRA FORA) */}
+                                        {selectedCard.rarity === 'épico' && (
+                                            <div className="absolute inset-0 shadow-[0_0_30px_rgba(249,115,22,0.4)] rounded-[28px] pointer-events-none"></div>
+                                        )}
+                                        {selectedCard.rarity === 'lendário' && (
+                                            <div className="absolute inset-0 shadow-[0_0_40px_rgba(250,204,21,0.5)] rounded-[28px] pointer-events-none"></div>
+                                        )}
                                     </>
                                 ) : (
                                     <div className={`absolute inset-0 ${isMe ? 'bg-neutral-800' : 'bg-neutral-900/60'}`} />
