@@ -108,10 +108,10 @@ export const CardStore: React.FC<CardStoreProps> = ({
 
     const getRarityStyles = (rarity: Rarity) => {
         switch (rarity) {
-            case 'comum': return { color: 'text-blue-400', border: 'border-white/10', glow: 'shadow-[0_0_15px_rgba(255,255,255,0.1)]' };
-            case 'raro': return { color: 'text-cyan-400', border: 'border-cyan-500/50', glow: 'shadow-[0_0_20px_rgba(6,182,212,0.3)]' };
-            case 'épico': return { color: 'text-orange-500', border: 'border-orange-500', glow: 'shadow-[0_0_25px_rgba(249,115,22,0.4)]' };
-            case 'lendário': return { color: 'text-yellow-400', border: 'border-yellow-400', glow: 'shadow-[0_0_30px_rgba(250,204,21,0.5)] border-[3px]' };
+            case 'comum': return { color: 'text-blue-400', border: 'border-white/10', glow: 'shadow-[0_0_15px_rgba(255,255,255,0.05)]' };
+            case 'raro': return { color: 'text-cyan-400', border: 'border-cyan-500/30', glow: 'shadow-[0_0_20px_rgba(6,182,212,0.2)]' };
+            case 'épico': return { color: 'text-orange-500', border: 'border-white/20', glow: 'shadow-[0_0_25px_rgba(249,115,22,0.3)]' };
+            case 'lendário': return { color: 'text-yellow-400', border: 'border-white/30', glow: 'shadow-[0_0_30px_rgba(250,204,21,0.4)] border-[2px]' };
             default: return { color: 'text-white', border: 'border-white/10', glow: '' };
         }
     };
@@ -143,7 +143,7 @@ export const CardStore: React.FC<CardStoreProps> = ({
                             key={r}
                             onClick={() => setFilter(r)}
                             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${filter === r
-                                ? 'bg-orange-500 border-orange-400 text-white shadow-lg'
+                                ? 'bg-white text-black border-white shadow-xl scale-105'
                                 : 'bg-white/5 border-white/5 text-white/40'
                                 }`}
                         >

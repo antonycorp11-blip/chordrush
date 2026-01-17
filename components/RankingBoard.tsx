@@ -235,10 +235,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 key={`${entry.name}-${index}`}
                                 onClick={() => handlePlayerClick(entry)}
                                 className={`
-                                    relative flex items-center justify-between p-5 rounded-[28px] border-2 transition-all duration-300 cursor-pointer active:scale-95
-                                    ${isMe ? 'border-orange-500 shadow-xl scale-[1.02] z-10' : 'border-white/5 hover:border-white/20'}
-                                    ${selectedCard?.rarity === 'épico' ? 'shadow-[0_0_20px_rgba(249,115,22,0.3)]' : ''}
-                                    ${selectedCard?.rarity === 'lendário' ? 'shadow-[0_0_30px_rgba(250,204,21,0.4)]' : ''}
+                                    relative flex items-center justify-between p-5 rounded-[28px] border transition-all duration-300 cursor-pointer active:scale-95
+                                    ${isMe ? 'border-white/20 bg-white/5 z-10' : 'border-white/5 hover:border-white/20'}
+                                    ${selectedCard?.rarity === 'épico' ? 'shadow-[0_0_20px_rgba(249,115,22,0.2)]' : ''}
+                                    ${selectedCard?.rarity === 'lendário' ? 'shadow-[0_0_30px_rgba(250,204,21,0.3)]' : ''}
                                 `}
                             >
                                 {/* AURA EXTERNA (QUE PULA PRA FORA) */}
