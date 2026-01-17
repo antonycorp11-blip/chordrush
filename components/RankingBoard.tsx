@@ -17,81 +17,84 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const fetchRanking = async () => {
         setLoading(true);
         try {
-            // 1. Buscamos TODOS os scores da semana para poder calcular o "Melhor Score" e o "Último Jogo"
-            // Nota: Ordenamos por score desc para facilitar pegar o melhor score primeiro
+            // 1. Buscamos TODOS os scores recentes (top 500 para garantir cobertura)
             const { data: scoresData, error: sError } = await supabase
                 .from('scores')
                 .select('player_id, score, created_at')
-                .order('score', { ascending: false });
+                .order('score', { ascending: false })
+                .limit(500);
 
             if (!scoresData || sError) throw sError;
 
-            // 2. Extraímos os IDs únicos de jogadores que têm scores
-            const uniquePlayerIds = Array.from(new Set(scoresData.map(s => s.player_id)));
-
-            // 3. Buscamos os dados desses jogadores (XP, Nome, etc)
-            const { data: playersData, error: pError } = await supabase
+            // 2. Buscamos os Top 1000 jogadores por XP para garantir que pegamos as patentes reais
+            // mesmo que o XP esteja em um "perfil" diferente do score (mesmo nome)
+            const { data: allPlayers, error: pError } = await supabase
                 .from('players')
                 .select('id, device_id, name, xp, selected_card_id')
-                .in('id', uniquePlayerIds);
+                .order('xp', { ascending: false })
+                .limit(1000);
 
-            if (!playersData || pError) throw pError;
+            if (!allPlayers || pError) throw pError;
 
-            const playersMap = new Map(playersData.map(p => [p.id, p]));
+            // Criamos um mapa de XP por NOME (para consolidar jogadores que trocaram de aparelho ou resetaram)
+            const nameToXPMap = new Map();
+            allPlayers.forEach(p => {
+                if (!p.name) return;
+                const nameKey = p.name.trim().toUpperCase();
+                const currentMaxXP = nameToXPMap.get(nameKey)?.xp || 0;
+                if (p.xp > currentMaxXP) {
+                    nameToXPMap.set(nameKey, { xp: p.xp, device_id: p.device_id, card: p.selected_card_id });
+                }
+            });
 
-            // 4. Agrupar dados por jogador
-            const playerStatsMap = new Map();
+            // Mapa de PlayerID para objeto Player (para busca rápida via score)
+            const playersById = new Map(allPlayers.map(p => [p.id, p]));
+
+            // Agrupar dados por NOME para o Ranking Final
+            const consolidatedRankingMap = new Map();
 
             scoresData.forEach(s => {
-                const player = playersMap.get(s.player_id);
-                if (!player) return;
+                const player = playersById.get(s.player_id);
+                if (!player || !player.name) return;
 
                 const nameKey = player.name.trim().toUpperCase();
-                const existing = playerStatsMap.get(nameKey);
+                const xpData = nameToXPMap.get(nameKey) || { xp: player.xp || 0, device_id: player.device_id, card: player.selected_card_id };
 
+                const existing = consolidatedRankingMap.get(nameKey);
                 const sTime = new Date(s.created_at).getTime();
 
                 if (!existing) {
-                    playerStatsMap.set(nameKey, {
-                        device_id: player.device_id,
+                    consolidatedRankingMap.set(nameKey, {
                         name: player.name,
-                        xp: player.xp || 0,
-                        selected_card_id: player.selected_card_id,
-                        bestScore: s.score,
+                        device_id: xpData.device_id,
+                        xp: xpData.xp,
+                        selected_card_id: xpData.card,
+                        score: s.score,
                         lastPlayedAt: s.created_at,
                         lastPlayedTime: sTime
                     });
                 } else {
-                    // Atualiza o melhor score se este for maior
-                    if (s.score > existing.bestScore) {
-                        existing.bestScore = s.score;
+                    // Update best score
+                    if (s.score > existing.score) {
+                        existing.score = s.score;
                     }
-                    // Atualiza o último jogo se este for mais recente
+                    // Update last played
                     if (sTime > existing.lastPlayedTime) {
                         existing.lastPlayedAt = s.created_at;
                         existing.lastPlayedTime = sTime;
                     }
-                    // Garante que o XP e Card sejam os mais recentes (do perfil do player)
-                    existing.xp = Math.max(existing.xp, player.xp || 0);
+                    // Ensure we have the best XP found for this name
+                    existing.xp = Math.max(existing.xp, xpData.xp);
                 }
             });
 
-            // 5. Formatar para o Ranking
-            const finalRanking = Array.from(playerStatsMap.values())
-                .map(item => ({
-                    device_id: item.device_id,
-                    name: item.name,
-                    xp: item.xp,
-                    selected_card_id: item.selected_card_id,
-                    score: item.bestScore,
-                    created_at: item.lastPlayedAt // Mostramos a data do ÚLTIMO JOGO
-                }))
+            const finalRanking = Array.from(consolidatedRankingMap.values())
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 50);
 
             setRanking(finalRanking as any);
         } catch (err) {
-            console.error('Erro detalhado no ranking:', err);
+            console.error('Erro no ranking v2.0:', err);
         }
         setLoading(false);
     };
@@ -101,7 +104,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         const timer = setInterval(() => setNow(Date.now()), 10000);
 
         const channel = supabase
-            .channel('ranking_live')
+            .channel('ranking_v2')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => fetchRanking())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => fetchRanking())
             .subscribe();
@@ -114,15 +117,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
-
-        // Parse seguro da data ISO do Supabase
-        const pastDate = new Date(dateString);
-        const past = pastDate.getTime();
-
-        // O Supabase sempre retorna UTC. Se o Date do browser não entender, forçamos.
+        const past = new Date(dateString).getTime();
         const diff = Math.floor((Date.now() - past) / 1000);
 
-        if (diff < 30) return 'Agora';
+        if (diff < 20) return 'Agora';
         if (diff < 60) return '1m';
         if (diff < 3600) return `${Math.floor(diff / 60)}m`;
         if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
@@ -137,14 +135,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">Status da Temporada</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">Status da Temporada v2.0</span>
                 </div>
             </div>
 
             {loading && ranking.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
                     <div className="w-10 h-10 border-[3px] border-orange-500/10 border-t-orange-500 rounded-full animate-spin"></div>
-                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Sincronizando...</span>
+                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Sincronizando Patentes...</span>
                 </div>
             ) : (
                 <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
@@ -173,7 +171,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="text-lg font-black text-white tracking-tight break-words line-clamp-1 uppercase">
+                                            <span className="text-lg font-black text-white tracking-tight break-words line-clamp-1 uppercase whitespace-nowrap overflow-hidden">
                                                 {entry.name}
                                             </span>
                                             {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">VOCÊ</span>}
