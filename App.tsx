@@ -28,7 +28,7 @@ const App: React.FC = () => {
         selectedCardId: parsed.selectedCardId
       };
     }
-    return { playerName: '', highScore: 0, totalXP: 0 };
+    return { playerName: '', highScore: 0, totalXP: 0, accumulatedXP: 0 };
   });
 
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
@@ -68,7 +68,7 @@ const App: React.FC = () => {
       const deviceId = getDeviceId();
       const { data } = await supabase
         .from('players')
-        .select('name, selected_card_id, xp')
+        .select('name, selected_card_id, xp, total_xp')
         .eq('device_id', deviceId)
         .maybeSingle();
 
@@ -77,12 +77,13 @@ const App: React.FC = () => {
           ...prev,
           playerName: data.name || prev.playerName,
           selectedCardId: data.selected_card_id,
-          totalXP: (data.xp !== null && data.xp !== undefined) ? data.xp : prev.totalXP
+          totalXP: (data.xp !== null && data.xp !== undefined) ? data.xp : prev.totalXP,
+          accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
         }));
       }
 
       // Check Version for Changelog
-      const currentVersion = '2.9.1';
+      const currentVersion = '3.0.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -92,7 +93,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '2.9.1');
+    localStorage.setItem('chordRush_version', '3.0.0');
     setShowChangelog(false);
   };
 
@@ -175,7 +176,12 @@ const App: React.FC = () => {
     const finalLevel = levelRef.current;
     const finalXP = sessionXPRef.current;
     setGameState(GameState.GAMEOVER);
-    setStats(prev => ({ ...prev, highScore: Math.max(prev.highScore, finalScore), totalXP: prev.totalXP + finalXP }));
+    setStats(prev => ({
+      ...prev,
+      highScore: Math.max(prev.highScore, finalScore),
+      totalXP: prev.totalXP + finalXP,
+      accumulatedXP: (prev.accumulatedXP || 0) + finalXP
+    }));
     await saveScoreToBackend(finalScore, finalLevel);
     const deviceId = getDeviceId();
     await supabase.rpc('increment_player_xp', { device_id_param: deviceId, xp_to_add: finalXP });
@@ -252,7 +258,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.9.1</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 3.0.0</p>
               </div>
             </div>
 
@@ -302,8 +308,9 @@ const App: React.FC = () => {
 
             {/* BOX DE JOGADOR - LIMPO SEM SPOILERS */}
             {(() => {
-              const title = getPlayerTitle(stats.totalXP);
-              const progress = getNextLevelProgress(stats.totalXP);
+              // Título baseado no XP ACUMULADO, não no saldo
+              const title = getPlayerTitle(stats.accumulatedXP || 0);
+              const progress = getNextLevelProgress(stats.accumulatedXP || 0);
               return (
                 <div
                   className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 ${selectedEffectCard ? 'border-orange-500/50' : 'bg-neutral-900/80 border-white/10'}`}
@@ -434,6 +441,7 @@ const App: React.FC = () => {
           onBack={() => setGameState(GameState.MENU)}
           totalXP={stats.totalXP}
           onXPUpdate={(newXP) => setStats(prev => ({ ...prev, totalXP: newXP }))}
+          accumulatedXP={stats.accumulatedXP || 0}
           selectedCardId={stats.selectedCardId}
           onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
         />
@@ -453,7 +461,7 @@ const App: React.FC = () => {
 
             <div className="mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">XP FIX <span className="text-white/20">V2.9.1</span></h2>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">LEVEL SYSTEM <span className="text-white/20">V3.0.0</span></h2>
             </div>
 
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">

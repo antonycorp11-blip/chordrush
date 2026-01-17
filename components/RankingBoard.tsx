@@ -49,7 +49,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
             const { data: playersData, error: pError } = await supabase
                 .from('players')
-                .select('id, device_id, name, xp, selected_card_id')
+                .select('id, device_id, name, xp, total_xp, selected_card_id')
                 .in('id', playerIds);
 
             if (pError) throw pError;
@@ -71,6 +71,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         name: player.name,
                         device_id: player.device_id,
                         xp: player.xp || 0,
+                        total_xp: player.total_xp || player.xp || 0,
                         selected_card_id: player.selected_card_id,
                         bestScore: s.score,
                         lastPlayedTime: sTime,
@@ -82,7 +83,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                         existing.lastPlayedTime = sTime;
                         existing.lastPlayedAt = s.created_at;
                     }
-                    existing.xp = Math.max(existing.xp, player.xp || 0);
+                    existing.xp = player.xp || 0;
+                    existing.total_xp = player.total_xp || player.xp || 0;
                     // Atualiza o card se o player record for o mais recente
                     if (sTime >= existing.lastPlayedTime) {
                         existing.selected_card_id = player.selected_card_id;
@@ -97,6 +99,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     device_id: item.device_id,
                     name: item.name,
                     xp: item.xp,
+                    total_xp: item.total_xp,
                     score: item.bestScore,
                     created_at: item.lastPlayedAt,
                     selected_card_id: item.selected_card_id
@@ -148,7 +151,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V2.5.0 • Live Sync</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V3.0.0 • Lifetime Ranking</span>
                 </div>
             </div>
 
@@ -161,7 +164,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
-                        const playerXP = entry.xp || 0;
+                        const playerXP = entry.total_xp || entry.xp || 0; // Usar total_xp para a patente no ranking
                         const titleInfo = getPlayerTitle(playerXP);
                         const progress = getNextLevelProgress(playerXP);
                         // Achar o card selecionado
