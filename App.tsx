@@ -318,68 +318,72 @@ const App: React.FC = () => {
               <h1 className="text-6xl sm:text-8xl font-black tracking-tighter italic leading-none block">
                 CHORD<span className="text-orange-500">RUSH</span>
               </h1>
-              <p className="text-orange-500 font-black tracking-[0.3em] text-xs uppercase">Master the Fretboard v2</p>
+              <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard v2</p>
             </div>
 
-            <div className="w-full space-y-3">
+            <div className="w-full space-y-4">
               <div className="relative group">
                 <input
                   type="text"
                   placeholder="Seu Nome"
                   value={stats.playerName}
                   onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-4 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
+                  className="w-full bg-black/40 border-2 border-white/5 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
                   disabled={!stats.playerName.trim()}
-                  className={`bg-white text-black font-black py-4 rounded-xl text-lg transition-all shadow-xl border-b-4 border-neutral-300 uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed border-neutral-500' : 'active:scale-95 hover:bg-neutral-100'}`}
+                  className={`relative overflow-hidden group bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
                 >
-                  Normal
-                </button>
-                <button
-                  onClick={() => stats.playerName.trim() && startNewGame(GameMode.HARD)}
-                  disabled={!stats.playerName.trim()}
-                  className={`bg-orange-500 text-white font-black py-4 rounded-xl text-lg transition-all shadow-xl border-b-4 border-orange-700 uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed border-orange-900' : 'active:scale-95 hover:bg-orange-400'}`}
-                >
-                  Difícil
+                  <div className="relative z-10 flex items-center justify-center gap-3">
+                    <i className="fa-solid fa-play text-orange-500"></i>
+                    Jogar Agora
+                  </div>
                 </button>
               </div>
-
-              <button
-                onClick={() => setGameState(GameState.RANKING)}
-                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 text-yellow-950 font-black p-4 rounded-xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-yellow-700 flex items-center justify-center gap-3"
-              >
-                <i className="fa-solid fa-trophy text-xl"></i>
-                RANKING SEMANAL
-              </button>
 
               <button
                 onClick={() => setGameState(GameState.STORE)}
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-black p-4 rounded-xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-blue-900 flex items-center justify-center gap-3"
+                className="w-full relative overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 text-white font-black p-5 rounded-2xl text-xl active:translate-y-[4px] shadow-[0_4px_0_#1e3a8a] active:shadow-none transition-all flex items-center justify-center gap-4 group"
               >
-                <i className="fa-solid fa-store text-xl"></i>
-                LOJA DE CARDS
+                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform"></div>
+                <i className="fa-solid fa-cart-shopping text-2xl animate-pulse"></i>
+                <div className="flex flex-col items-start leading-none text-left">
+                  <span className="text-[10px] uppercase tracking-widest opacity-70 mb-1">Customização</span>
+                  <span className="uppercase tracking-tight">Loja de Cards</span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setGameState(GameState.RANKING)}
+                className="w-full bg-white/5 border-2 border-white/10 text-yellow-500 font-black p-4 rounded-2xl text-lg active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-white/10"
+              >
+                <i className="fa-solid fa-trophy text-xl"></i>
+                RANKING GLOBAL
               </button>
             </div>
 
-            <div className="w-full bg-black/20 rounded-2xl p-4 border border-white/5 shadow-2xl backdrop-blur-sm">
-              <div className="flex justify-between items-center">
-                <div className="flex flex-col">
-                  <h3 className="text-white/40 text-[9px] font-black uppercase tracking-widest">Jogador</h3>
-                  <span className="font-black text-lg text-white truncate max-w-[140px]">{stats.playerName || '---'}</span>
-                </div>
-                <div className="text-right flex flex-col">
-                  <h3 className="text-white/40 text-[9px] font-black uppercase tracking-widest">Recorde</h3>
-                  <span className="text-2xl font-black text-orange-400">{stats.highScore}</span>
+            <div className="w-full flex justify-between items-center bg-black/40 rounded-3xl p-5 border border-white/10 shadow-2xl backdrop-blur-md">
+              <div className="flex flex-col">
+                <h3 className="text-white/30 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Jogador</h3>
+                <span className="font-black text-xl text-white tracking-tight">{stats.playerName || '---'}</span>
+              </div>
+              <div className="flex flex-col items-end pl-4 border-l border-white/5">
+                <h3 className="text-white/30 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-bolt text-orange-500 text-xs shadow-[0_0_10px_rgba(249,115,22,0.5)]"></i>
+                  <span className="text-2xl font-black text-white tabular-nums">{stats.totalXP.toLocaleString()}</span>
                 </div>
               </div>
-              <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-center gap-2">
-                <i className="fa-solid fa-bolt text-xs text-orange-400"></i>
-                <span className="text-xs font-black text-white/50">{stats.totalXP.toLocaleString()} XP</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-4 text-white/20">
+              <div className="flex flex-col items-center">
+                <span className="text-[8px] font-black uppercase tracking-widest">Recorde</span>
+                <span className="text-sm font-black text-orange-500/60">{stats.highScore}</span>
               </div>
             </div>
           </div>

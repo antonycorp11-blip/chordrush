@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { supabase, getDeviceId } from '../utils/supabaseClient';
 import { RankingEntry } from '../types';
 import { CARDS } from '../constants/cards';
@@ -9,181 +9,132 @@ interface RankingBoardProps {
 }
 
 export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
-    const [ranking, setRanking] = useState<RankingEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const myDeviceId = getDeviceId();
+    const [ranking, setRanking] = React.useState<RankingEntry[]>([]);
+    const [loading, setLoading] = React.useState(true);
+    const deviceId = getDeviceId();
 
-    useEffect(() => {
+    React.useEffect(() => {
+        const fetchRanking = async () => {
+            const { data, error } = await supabase
+                .from('weekly_ranking')
+                .select('*');
+
+            if (data) {
+                setRanking(data);
+            }
+            setLoading(false);
+        };
+
         fetchRanking();
     }, []);
 
-    const fetchRanking = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('weekly_ranking')
-                .select('*')
-                .limit(50);
+    const getRankingIcon = (index: number) => {
+        switch (index) {
+            case 0: return 'text-yellow-400 text-3xl drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]';
+            case 1: return 'text-gray-300 text-2xl';
+            case 2: return 'text-orange-400 text-xl';
+            default: return 'text-white/20 text-sm';
+        }
+    };
 
-            if (error) {
-                console.error('Error fetching ranking:', error);
-            } else {
-                setRanking(data || []);
-            }
-        } catch (err) {
-            console.error('Unexpected error:', err);
-        } finally {
-            setLoading(false);
+    const getNameFontStyle = (cardId?: string) => {
+        if (!cardId) return 'font-black';
+        const card = CARDS.find(c => c.id === cardId);
+        if (!card) return 'font-black';
+
+        switch (card.rarity) {
+            case 'raro': return 'font-["Press_Start_2P"] text-[10px] tracking-normal uppercase';
+            case 'épico': return 'font-["Bangers"] text-2xl tracking-widest uppercase';
+            case 'lendário': return 'font-["Bangers"] text-3xl tracking-[0.1em] text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] uppercase';
+            default: return 'font-black';
         }
     };
 
     return (
-        <div className="w-full h-full flex flex-col items-center bg-neutral-900 overflow-hidden relative">
-            {/* Background Glows */}
-            <div className="absolute top-[-10%] right-[-10%] w-[300px] h-[300px] bg-orange-600/20 blur-[120px] rounded-full pointer-events-none"></div>
-            <div className="absolute bottom-[-10%] left-[-10%] w-[300px] h-[300px] bg-yellow-600/10 blur-[120px] rounded-full pointer-events-none"></div>
-
-            <div className="w-full max-w-lg flex flex-col h-full z-10 p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <button
-                        onClick={onBack}
-                        className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white shadow-xl"
-                    >
-                        <i className="fa-solid fa-chevron-left text-xl"></i>
-                    </button>
-                    <div className="flex flex-col items-end">
-                        <h2 className="text-4xl font-black italic tracking-tighter text-white uppercase leading-none">
-                            RANKING <span className="text-orange-500 underline decoration-4 underline-offset-4">SEMANAL</span>
-                        </h2>
-                        <span className="text-[10px] text-orange-500/60 uppercase font-black tracking-[0.3em] mt-2">
-                            Torneio Musical
-                        </span>
-                    </div>
-                </div>
-
-                {/* Prize Banner */}
-                <div className="mb-6 bg-gradient-to-r from-orange-600 to-orange-500 rounded-3xl p-4 shadow-[0_10px_30px_rgba(249,115,22,0.3)] border border-orange-400/30">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl">
-                            🍫
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-100/80 mb-0.5">Prêmio da Semana</h3>
-                            <p className="font-black text-white text-lg leading-tight uppercase italic">Barra de Chocolate Cacau Show</p>
-                        </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-orange-100">
-                        <span className="flex items-center gap-1.5 text-white bg-orange-700/50 px-2 py-1 rounded-lg">
-                            <i className="fa-regular fa-clock"></i> Termina Domingo 12:00
-                        </span>
-                        <span>Reseta à Meia-Noite</span>
-                    </div>
-                </div>
-
-                {/* Loading State */}
-                {loading && (
-                    <div className="flex-1 flex flex-col items-center justify-center gap-4">
-                        <div className="w-12 h-12 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
-                        <span className="text-white/20 font-black uppercase tracking-widest text-xs">Syncing Scores...</span>
-                    </div>
-                )}
-
-                {/* List */}
-                {!loading && (
-                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide py-2">
-                        {ranking.length === 0 ? (
-                            <div className="text-center text-white/20 py-20 bg-white/5 rounded-3xl border border-dashed border-white/10">
-                                <i className="fa-solid fa-ghost text-4xl mb-4 opacity-50"></i>
-                                <p className="font-black uppercase tracking-widest text-sm">No legends yet...</p>
-                            </div>
-                        ) : (
-                            ranking.map((entry, index) => {
-                                const isMe = entry.device_id === myDeviceId;
-                                const isTop3 = index < 3;
-                                const playerCard = entry.selected_card_id ? CARDS.find(c => c.id === entry.selected_card_id) : null;
-
-                                return (
-                                    <div
-                                        key={index}
-                                        style={playerCard ? { background: playerCard.image } : {}}
-                                        className={`
-                                            group relative flex items-center justify-between p-5 rounded-3xl border transition-all duration-300
-                                            ${isMe
-                                                ? playerCard
-                                                    ? 'border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.3)] scale-[1.03] z-10'
-                                                    : 'bg-gradient-to-br from-orange-600/30 to-orange-900/40 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.3)] scale-[1.03] z-10'
-                                                : playerCard
-                                                    ? 'border-white/20'
-                                                    : isTop3
-                                                        ? 'bg-white/10 border-white/10 hover:border-white/20 hover:bg-white/15'
-                                                        : 'bg-white/5 border-transparent hover:bg-white/10'
-                                            }
-                                        `}
-                                    >
-                                        {playerCard && (
-                                            <div className="absolute inset-0 bg-black/20 rounded-3xl pointer-events-none"></div>
-                                        )}
-
-                                        <div className="flex items-center gap-5 z-10">
-                                            <div className="relative">
-                                                <div className={`
-                          w-12 h-12 flex items-center justify-center rounded-2xl font-black text-xl shadow-inner
-                          ${index === 0 ? 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-yellow-950 scale-110 shadow-yellow-400/50' :
-                                                        index === 1 ? 'bg-gradient-to-br from-gray-200 to-gray-500 text-gray-950' :
-                                                            index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100' :
-                                                                'bg-black/40 text-white/40 border border-white/5'}
-                        `}>
-                                                    {index + 1}
-                                                </div>
-                                                {index === 0 && (
-                                                    <i className="fa-solid fa-crown absolute -top-3 -right-3 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] rotate-12 text-xl"></i>
-                                                )}
-                                            </div>
-
-                                            <div className="flex flex-col">
-                                                <span className={`font-black text-xl tracking-tight uppercase ${isMe ? 'text-white' : 'text-white/90'}`}>
-                                                    {entry.name}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="px-2 py-0.5 bg-orange-500/20 rounded-md">
-                                                        <span className="text-[9px] text-orange-400 font-black uppercase tracking-widest">
-                                                            Nível {entry.level}
-                                                        </span>
-                                                    </div>
-                                                    {isMe && <span className="text-[9px] text-white/40 font-black uppercase italic">Você</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-right z-10">
-                                            <div className="flex flex-col items-end">
-                                                <span className={`text-3xl font-black leading-none ${isMe ? 'text-orange-400' : index === 0 ? 'text-yellow-400' : 'text-white'} tabular-nums`}>
-                                                    {entry.score}
-                                                </span>
-                                                <span className="text-[9px] text-white/30 uppercase font-black tracking-widest mt-1">
-                                                    Points
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {isMe && (
-                                            <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-12 bg-orange-500 rounded-full blur-[2px]"></div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                )}
-
-                {/* Footer Info */}
-                <div className="mt-4 p-4 bg-white/5 rounded-2xl border border-white/5 text-center flex items-center justify-center gap-3">
-                    <i className="fa-solid fa-circle-info text-orange-500/50"></i>
-                    <span className="text-[10px] text-white/40 font-bold uppercase tracking-[0.1em]">
-                        Ranking reseta automaticamente todo domingo
-                    </span>
+        <div className="w-full h-full flex flex-col bg-[#0a0a0a] overflow-hidden">
+            {/* Header */}
+            <div className="p-6 pb-2 flex items-center justify-between">
+                <button
+                    onClick={onBack}
+                    className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white"
+                >
+                    <i className="fa-solid fa-chevron-left text-xl"></i>
+                </button>
+                <div className="flex flex-col items-end">
+                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
+                        RANKING <span className="text-orange-500">GLOBAL</span>
+                    </h2>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">Status da Temporada</span>
                 </div>
             </div>
+
+            {loading ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-4">
+                    <div className="w-10 h-10 border-[3px] border-orange-500/10 border-t-orange-500 rounded-full animate-spin"></div>
+                    <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Calculando Posições...</span>
+                </div>
+            ) : (
+                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
+                    {ranking.map((entry, index) => {
+                        const isMe = entry.device_id === deviceId;
+                        const card = CARDS.find(c => c.id === entry.selected_card_id);
+                        const isTop3 = index < 3;
+
+                        return (
+                            <div
+                                key={index}
+                                className={`
+                                    relative flex items-center justify-between p-5 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
+                                    ${isMe ? 'scale-[1.02] z-10' : 'scale-100'}
+                                    ${card
+                                        ? 'border-white/20'
+                                        : isMe
+                                            ? 'bg-orange-500/20 border-orange-500/50'
+                                            : 'bg-white/5 border-white/5'
+                                    }
+                                `}
+                                style={card ? {
+                                    backgroundImage: `url(${card.image})`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                } : {}}
+                            >
+                                {/* Overlay para legibilidade */}
+                                {card && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-none"></div>}
+
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="w-10 flex justify-center">
+                                        {isTop3 ? (
+                                            <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i>
+                                        ) : (
+                                            <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className={`text-white truncate max-w-[160px] leading-tight ${getNameFontStyle(entry.selected_card_id)}`}>
+                                            {entry.name}
+                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
+                                            {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase">Você</span>}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="text-right relative z-10">
+                                    <div className="text-2xl font-black text-white italic tracking-tighter leading-none">
+                                        {entry.score.toLocaleString()}
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Pontos</span>
+                                </div>
+
+                                {/* Glow effect for ME */}
+                                {isMe && !card && <div className="absolute inset-0 border-2 border-orange-500/50 rounded-[30px] animate-pulse"></div>}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
