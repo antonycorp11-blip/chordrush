@@ -1,94 +1,92 @@
 
 import { Card } from '../types';
 
-// Usaremos patterns puramente CSS de alta qualidade (Gradients + Repeating Designs)
-// Isso evita que links externos quebrem o visual e garante performance.
 export const CARDS: Card[] = [
-    // COMUM - 5,000 XP
+    // COMUM - Pixel Art Styles (0 XP para teste)
     {
-        id: 'c1', name: 'Blue Rhythm', rarity: 'comum', price: 0,
-        image: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
+        id: 'c1', name: 'Pixel Sky', rarity: 'comum', price: 0,
+        image: 'url(https://i.pinimg.com/originals/15/4f/7b/154f7b6058097d8cf16896175051a2e7.gif)'
     },
     {
-        id: 'c2', name: 'Emerald Deck', rarity: 'comum', price: 0,
-        image: 'linear-gradient(135deg, #064e3b 0%, #10b981 100%)'
+        id: 'c2', name: 'Green Bit', rarity: 'comum', price: 0,
+        image: 'url(https://i.pinimg.com/originals/e5/22/1a/e5221a733735520a06dfa99b45663738.gif)'
     },
     {
-        id: 'c3', name: 'Slate Echo', rarity: 'comum', price: 0,
-        image: 'linear-gradient(135deg, #334155 0%, #64748b 100%)'
+        id: 'c3', name: 'Night City', rarity: 'comum', price: 0,
+        image: 'url(https://i.pinimg.com/originals/52/6a/0c/526a0cb4d4d98a0c20184497e743606f.gif)'
     },
     {
-        id: 'c4', name: 'Teal Pulse', rarity: 'comum', price: 0,
-        image: 'linear-gradient(135deg, #134e4a 0%, #14b8a6 100%)'
+        id: 'c4', name: 'Cyber Grid', rarity: 'comum', price: 0,
+        image: 'url(https://i.pinimg.com/originals/4d/7f/73/4d7f739665bc7c3e144a99182a44ae9a.gif)'
     },
     {
-        id: 'c5', name: 'Indigo Beat', rarity: 'comum', price: 0,
-        image: 'linear-gradient(135deg, #312e81 0%, #6366f1 100%)'
+        id: 'c5', name: 'Indigo Cave', rarity: 'comum', price: 0,
+        image: 'url(https://i.pinimg.com/originals/9e/7b/4b/9e7b4b39b7a42167d64d5c415664177d.gif)'
     },
     {
-        id: 'c6', name: 'Carbon Note', rarity: 'comum', price: 0,
-        image: 'linear-gradient(135deg, #171717 0%, #404040 100%)'
-    },
-
-    // RARO - 10,000 XP (Neon Styles)
-    {
-        id: 'r1', name: 'Neon Purple', rarity: 'raro', price: 0,
-        image: 'repeating-linear-gradient(45deg, #581c87, #581c87 10px, #6b21a8 10px, #6b21a8 20px)'
-    },
-    {
-        id: 'r2', name: 'Electric Pink', rarity: 'raro', price: 0,
-        image: 'linear-gradient(to right, #831843, #db2777, #831843)'
-    },
-    {
-        id: 'r3', name: 'Cyber Cyan', rarity: 'raro', price: 0,
-        image: 'linear-gradient(135deg, #164e63 0%, #0891b2 50%, #164e63 100%)'
-    },
-    {
-        id: 'r4', name: 'Vulcan Flare', rarity: 'raro', price: 0,
-        image: 'linear-gradient(45deg, #7c2d12, #ea580c)'
-    },
-    {
-        id: 'r5', name: 'Acid Green', rarity: 'raro', price: 0,
-        image: 'linear-gradient(to bottom, #064e3b, #10b981, #064e3b)'
-    },
-    {
-        id: 'r6', name: 'Vortex Violet', rarity: 'raro', price: 0,
-        image: 'radial-gradient(circle, #4c1d95, #1e1b4b)'
+        id: 'c6', name: 'Grey Synth', rarity: 'comum', price: 0,
+        image: 'url(https://i.pinimg.com/originals/0d/17/7d/0d177d33939611b7145749767222f7cc.gif)'
     },
 
-    // ÉPICO - 30,000 XP
+    // RARO - Neon Synth
     {
-        id: 'e1', name: 'Molten Gold', rarity: 'épico', price: 0,
-        image: 'linear-gradient(135deg, #78350f 0%, #fbbf24 50%, #78350f 100%)'
+        id: 'r1', name: 'Vaporwave', rarity: 'raro', price: 0,
+        image: 'url(https://i.pinimg.com/originals/be/73/c6/be73c66f7ecc0cc85eb119280e7293a3.gif)'
     },
     {
-        id: 'e2', name: 'Crimson Storm', rarity: 'épico', price: 0,
-        image: 'linear-gradient(to top, #7f1d1d, #ef4444, #7f1d1d)'
+        id: 'r2', name: 'Neon Drive', rarity: 'raro', price: 0,
+        image: 'url(https://i.pinimg.com/originals/a0/0a/61/a00a6183d2c3852179e8cb0cb63d421d.gif)'
     },
     {
-        id: 'e3', name: 'Deep Nebula', rarity: 'épico', price: 0,
-        image: 'radial-gradient(ellipse at center, #2e1065 0%, #000000 100%)'
+        id: 'r3', name: 'Matrix Pulse', rarity: 'raro', price: 0,
+        image: 'url(https://i.pinimg.com/originals/82/38/c7/8238c7f077755e347700201d41c9a667.gif)'
     },
     {
-        id: 'e4', name: 'Abyssal Key', rarity: 'épico', price: 0,
-        image: 'linear-gradient(45deg, #0f172a, #334155, #0f172a)'
+        id: 'r4', name: 'Lava Arc', rarity: 'raro', price: 0,
+        image: 'url(https://i.pinimg.com/originals/39/3a/0d/393a0d5c490a78631168962057797771.gif)'
+    },
+    {
+        id: 'r5', name: 'Aurora', rarity: 'raro', price: 0,
+        image: 'url(https://i.pinimg.com/originals/c8/10/ec/c810ec76957cc5982f6e9b466248c582.gif)'
+    },
+    {
+        id: 'r6', name: 'Void Ray', rarity: 'raro', price: 0,
+        image: 'url(https://i.pinimg.com/originals/74/09/2b/74092b77227f6735e054fdf808796f6e.gif)'
     },
 
-    // LENDÁRIO - 60,000 XP
+    // ÉPICO - Epic Illustration
     {
-        id: 'l1', name: 'Supernova', rarity: 'lendário', price: 0,
-        image: 'linear-gradient(135deg, #ef4444, #f59e0b, #3b82f6, #8b5cf6, #ef4444)'
+        id: 'e1', name: 'Dragon Fire', rarity: 'épico', price: 0,
+        image: 'url(https://i.pinimg.com/originals/72/77/8c/72778c187df1ea178494e0f63116d4e2.gif)'
     },
     {
-        id: 'l2', name: 'Diamond Strings', rarity: 'lendário', price: 0,
-        image: 'linear-gradient(to bottom, #0f172a, #38bdf8, #f8fafc, #38bdf8, #0f172a)'
+        id: 'e2', name: 'Storm Call', rarity: 'épico', price: 0,
+        image: 'url(https://i.pinimg.com/originals/65/56/67/6556677943f728c8949826d705c87a2d.gif)'
     },
     {
-        id: 'l3', name: 'Solar Crown', rarity: 'lendário', price: 0,
-        image: 'radial-gradient(circle, #fbbf24 0%, #78350f 70%, #000000 100%)'
+        id: 'e3', name: 'Chaos Bass', rarity: 'épico', price: 0,
+        image: 'url(https://i.pinimg.com/originals/60/a4/0f/60a40f2f354790753f7c9e054bd7975f.gif)'
     },
     {
-        id: 'l4', name: 'Galaxy Master', rarity: 'lendário', price: 0,
-        image: 'repeating-linear-gradient(-45deg, #000 0, #000 20px, #1e1b4b 20px, #1e1b4b 40px)'
+        id: 'e4', name: 'Dark Key', rarity: 'épico', price: 0,
+        image: 'url(https://i.pinimg.com/originals/e7/bb/0a/e7bb0a70162a0a22f281ce9f43564e16.gif)'
     },
+
+    // LENDÁRIO - Mythic
+    {
+        id: 'l1', name: 'Golden God', rarity: 'lendário', price: 0,
+        image: 'url(https://i.pinimg.com/originals/6b/64/00/6b64006c7104d4936496924b207908b9.gif)'
+    },
+    {
+        id: 'l2', name: 'Diamond Edge', rarity: 'lendário', price: 0,
+        image: 'url(https://i.pinimg.com/originals/7d/56/f7/7d56f70966f3684a0c8b98b955745778.gif)'
+    },
+    {
+        id: 'l3', name: 'Celestial', rarity: 'lendário', price: 0,
+        image: 'url(https://i.pinimg.com/originals/30/01/a5/3001a57962dc2cc1829e080911767675.gif)'
+    },
+    {
+        id: 'l4', name: 'Cosmic End', rarity: 'lendário', price: 0,
+        image: 'url(https://i.pinimg.com/originals/be/73/c6/be73c66f7ecc0cc85eb119280e7293a3.gif)'
+    }
 ];

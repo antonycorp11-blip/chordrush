@@ -32,14 +32,14 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     };
 
     const getNameFontStyle = (cardId?: string) => {
-        if (!cardId) return 'font-black';
+        if (!cardId) return 'font-black text-lg';
         const card = CARDS.find(c => c.id === cardId);
-        if (!card) return 'font-black';
+        if (!card) return 'font-black text-lg';
         switch (card.rarity) {
-            case 'raro': return 'font-["Press_Start_2P"] text-[10px] tracking-normal uppercase';
+            case 'raro': return 'font-["Press_Start_2P"] text-[10px] tracking-normal uppercase leading-relaxed';
             case 'épico': return 'font-["Bangers"] text-2xl tracking-widest uppercase';
-            case 'lendário': return 'font-["Bangers"] text-3xl tracking-[0.1em] text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] uppercase';
-            default: return 'font-black';
+            case 'lendário': return 'font-["Bangers"] text-3xl tracking-[0.05em] text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]';
+            default: return 'font-black text-lg';
         }
     };
 
@@ -49,9 +49,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white">
                     <i className="fa-solid fa-chevron-left text-xl"></i>
                 </button>
-                <div className="flex flex-col items-end">
+                <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">Status da Temporada</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 whitespace-nowrap">Status da Temporada</span>
                 </div>
             </div>
 
@@ -73,18 +73,21 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 className={`
                                     relative flex items-center justify-between p-6 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
                                     ${isMe ? 'scale-[1.02] z-10' : 'scale-100'}
-                                    ${card ? 'border-white/20' : isMe ? 'bg-orange-500/20 border-orange-500/50' : 'bg-white/5 border-white/10'}
+                                    ${card ? 'border-white/30' : isMe ? 'bg-orange-500/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.2)]' : 'bg-white/5 border-white/10'}
                                 `}
-                                style={card ? { background: card.image } : {}}
+                                style={card ? { background: `${card.image} center/cover no-repeat` } : {}}
                             >
-                                {card && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-none"></div>}
+                                {card && <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px] pointer-events-none"></div>}
 
-                                <div className="flex items-center gap-4 relative z-10">
-                                    <div className="w-10 flex justify-center">
+                                <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
+                                    <div className="w-10 flex-shrink-0 flex justify-center">
                                         {isTop3 ? <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i> : <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>}
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className={`text-white truncate max-w-[160px] leading-tight ${getNameFontStyle(entry.selected_card_id)}`}> {entry.name} </span>
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                        {/* REMOVIDO TRUNCATE PARA O NOME APARECER TODO */}
+                                        <span className={`text-white leading-tight break-words pr-2 ${getNameFontStyle(entry.selected_card_id)}`}>
+                                            {entry.name}
+                                        </span>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
                                             {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase">Você</span>}
@@ -92,11 +95,11 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                     </div>
                                 </div>
 
-                                <div className="text-right relative z-10">
+                                <div className="text-right relative z-10 flex-shrink-0">
                                     <div className="text-2xl font-black text-white italic tracking-tighter leading-none"> {entry.score.toLocaleString()} </div>
                                     <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Pontos</span>
                                 </div>
-                                {isMe && <div className="absolute inset-0 border-2 border-orange-500/30 rounded-[30px] animate-pulse pointer-events-none"></div>}
+                                {isMe && <div className="absolute inset-0 border-2 border-orange-500/40 rounded-[30px] animate-pulse pointer-events-none"></div>}
                             </div>
                         );
                     })}
