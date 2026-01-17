@@ -124,16 +124,20 @@ const App: React.FC = () => {
   const saveScoreToBackend = async (finalScore: number, finalLevel: number) => {
     try {
       const deviceId = getDeviceId();
-      let { data: playerData } = await supabase.from('players').select('id').eq('device_id', deviceId).maybeSingle();
-      if (!playerData) {
-        const nameToSave = stats.playerName.trim() || `JOGADOR-${deviceId.slice(0, 4)}`;
-        const { data: newData } = await supabase.from('players').insert({ device_id: deviceId, name: nameToSave }).select('id').single();
-        playerData = newData;
-      }
-      if (playerData) {
-        await supabase.from('scores').insert({ player_id: playerData.id, score: finalScore, level: finalLevel });
-      }
-    } catch (err) { console.error('Erro ao salvar pontuação:', err); }
+
+      // Agora usamos RPC para chamar a função submit_score que criamos no SQL
+      // Isso é muito mais seguro porque o banco valida o device_id antes de aceitar o score
+      const { error } = await supabase.rpc('submit_score', {
+        device_id_param: deviceId,
+        score_param: finalScore,
+        level_param: finalLevel
+      });
+
+      if (error) throw error;
+      console.log('Pontuação salva com segurança!');
+    } catch (err) {
+      console.error('Erro ao salvar pontuação (Segurança):', err);
+    }
   };
 
   const startNewGame = async (selectedMode: GameMode) => {
