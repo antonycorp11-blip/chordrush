@@ -1,33 +1,33 @@
 
 import { Card } from '../types';
 
-// Art assets placeholder links (substituting with the newly generated high-quality pixel/cartoon art style refs)
+// Usaremos backgrounds gerados via CSS/Inline SVG para garantir estilo gamificado sem depender de links externos instáveis
 export const CARDS: Card[] = [
-    // COMUM - 5,000 XP (Pixel Art Minimalist) - Using specific areas of the generated sprite sheets
-    { id: 'c1', name: 'Pixel Wave', rarity: 'comum', price: 0, image: 'https://img.freepik.com/free-vector/pixel-art-night-sky-background_23-2148705664.jpg' },
-    { id: 'c2', name: 'Green Bit', rarity: 'comum', price: 0, image: 'https://img.freepik.com/free-vector/pixel-art-forest-background_23-2148710363.jpg' },
-    { id: 'c3', name: 'Slate Retro', rarity: 'comum', price: 0, image: 'https://img.freepik.com/free-vector/pixel-art-cityscape-background_23-2148705665.jpg' },
-    { id: 'c4', name: 'Teal Byte', rarity: 'comum', price: 0, image: 'https://img.freepik.com/free-vector/pixel-art-mountain-landscape_23-2148710364.jpg' },
-    { id: 'c5', name: 'Indigo 8-Bit', rarity: 'comum', price: 0, image: 'https://img.freepik.com/free-vector/pixel-art-abstract-background_23-2148705663.jpg' },
-    { id: 'c6', name: 'Carbon Synth', rarity: 'comum', price: 0, image: 'https://img.freepik.com/free-vector/pixel-art-gradient-background_23-2148710365.jpg' },
+    // COMUM - Pixel Art / 8-Bit (0 XP para teste)
+    { id: 'c1', name: 'Retro Ocean', rarity: 'comum', price: 0, image: 'linear-gradient(45deg, #1e3a8a 25%, #1e40af 25%, #1e40af 50%, #1e3a8a 50%, #1e3a8a 75%, #1e40af 75%, #1e40af 100%)' },
+    { id: 'c2', name: 'Forest Bit', rarity: 'comum', price: 0, image: 'linear-gradient(to bottom, #065f46, #059669)' },
+    { id: 'c3', name: 'Classic Slate', rarity: 'comum', price: 0, image: 'repeating-linear-gradient(45deg, #331133 0, #331133 10%, #442244 10%, #442244 20%)' },
+    { id: 'c4', name: 'Teal Block', rarity: 'comum', price: 0, image: 'linear-gradient(90deg, #134e4a 0%, #115e59 50%, #134e4a 100%)' },
+    { id: 'c5', name: 'Indigo Byte', rarity: 'comum', price: 0, image: 'linear-gradient(135deg, #312e81, #4338ca)' },
+    { id: 'c6', name: 'Mono Bass', rarity: 'comum', price: 0, image: 'linear-gradient(to right, #171717, #262626)' },
 
-    // RARO - 10,000 XP (Neon Pixel)
-    { id: 'r1', name: 'Neon Guitar', rarity: 'raro', price: 0, image: 'https://img.freepik.com/free-vector/neon-grid-landscape-with-mountains_52683-42485.jpg' },
-    { id: 'r2', name: 'Cyber Beat', rarity: 'raro', price: 0, image: 'https://img.freepik.com/free-vector/cyberpunk-city-street-with-neon-lights_52683-43187.jpg' },
-    { id: 'r3', name: 'Laser Synth', rarity: 'raro', price: 0, image: 'https://img.freepik.com/free-vector/retro-futuristic-background-with-grid_52683-42487.jpg' },
-    { id: 'r4', name: 'Orange Arcade', rarity: 'raro', price: 0, image: 'https://img.freepik.com/free-vector/neon-lights-tunnel-background_52683-43188.jpg' },
-    { id: 'r5', name: 'Emerald Pixel', rarity: 'raro', price: 0, image: 'https://img.freepik.com/free-vector/futuristic-grid-design_52683-42486.jpg' },
-    { id: 'r6', name: 'Violet Ray', rarity: 'raro', price: 0, image: 'https://img.freepik.com/free-vector/cyber-tech-neon-background_52683-43189.jpg' },
+    // RARO - Neon Synthwave
+    { id: 'r1', name: 'Cyber Guitar', rarity: 'raro', price: 0, image: 'radial-gradient(circle at center, #581c87, #000000)' },
+    { id: 'r2', name: 'Pink Laser', rarity: 'raro', price: 0, image: 'linear-gradient(to top, #831843, #db2777)' },
+    { id: 'r3', name: 'Cyan Grid', rarity: 'raro', price: 0, image: 'linear-gradient(0deg, transparent 24%, rgba(6, 182, 212, .3) 25%, rgba(6, 182, 212, .3) 26%, transparent 27%, transparent 74%, rgba(6, 182, 212, .3) 75%, rgba(6, 182, 212, .3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(6, 182, 212, .3) 25%, rgba(6, 182, 212, .3) 26%, transparent 27%, transparent 74%, rgba(6, 182, 212, .3) 75%, rgba(6, 182, 212, .3) 76%, transparent 77%, transparent), #083344' },
+    { id: 'r4', name: 'Neon Sunset', rarity: 'raro', price: 0, image: 'linear-gradient(to bottom, #f97316, #7c2d12, #000000)' },
+    { id: 'r5', name: 'Toxic Bit', rarity: 'raro', price: 0, image: 'linear-gradient(45deg, #064e3b, #10b981)' },
+    { id: 'r6', name: 'Electric Ray', rarity: 'raro', price: 0, image: 'linear-gradient(135deg, #4c1d95, #7c3aed)' },
 
-    // ÉPICO - 30,000 XP (Epic Cartoon Power)
-    { id: 'e1', name: 'Flaming Piano', rarity: 'épico', price: 0, image: 'https://img.freepik.com/free-vector/cartoon-volcano-eruption-illustration_52683-38971.jpg' },
-    { id: 'e2', name: 'Thunder Strings', rarity: 'épico', price: 0, image: 'https://img.freepik.com/free-vector/lightning-strike-dark-sky-cartoon_52683-38970.jpg' },
-    { id: 'e3', name: 'Nebula Bass', rarity: 'épico', price: 0, image: 'https://img.freepik.com/free-vector/space-nebula-galaxy-cartoon_52683-38969.jpg' },
-    { id: 'e4', name: 'Storm Master', rarity: 'épico', price: 0, image: 'https://img.freepik.com/free-vector/stormy-weather-with-lightning-cartoon_52683-38972.jpg' },
+    // ÉPICO - Animated Power
+    { id: 'e1', name: 'Inferno Piano', rarity: 'épico', price: 0, image: 'linear-gradient(to top, #450a0a, #991b1b, #ef4444)' },
+    { id: 'e2', name: 'Volt Strings', rarity: 'épico', price: 0, image: 'linear-gradient(to bottom, #0f172a, #1d4ed8, #60a5fa)' },
+    { id: 'e3', name: 'Nebula Bass', rarity: 'épico', price: 0, image: 'radial-gradient(circle, #2e1065, #1e1b4b, #000000)' },
+    { id: 'e4', name: 'Starlight', rarity: 'épico', price: 0, image: 'linear-gradient(to bottom, #111827, #374151)' },
 
-    // LENDÁRIO - 60,000 XP (High-Def Cartoon Cosmic)
-    { id: 'l1', name: 'Dragon Violin', rarity: 'lendário', price: 0, image: 'https://img.freepik.com/free-vector/celestial-dragon-starry-sky-cartoon_23-2148723456.jpg' },
-    { id: 'l2', name: 'Divine Harp', rarity: 'lendário', price: 0, image: 'https://img.freepik.com/free-vector/mythical-city-floating-island-cartoon_23-2148723457.jpg' },
-    { id: 'l3', name: 'Godly Guitar', rarity: 'lendário', price: 0, image: 'https://img.freepik.com/free-vector/epic-battle-gods-cartoon_23-2148723458.jpg' },
-    { id: 'l4', name: 'Cosmic Board', rarity: 'lendário', price: 0, image: 'https://img.freepik.com/free-vector/abstract-cosmic-vortex-cartoon_23-2148723459.jpg' },
+    // LENDÁRIO - Cosmic / Divine
+    { id: 'l1', name: 'Solar Flare', rarity: 'lendário', price: 0, image: 'linear-gradient(45deg, #78350f, #d97706, #fbbf24, #d97706, #78350f)' },
+    { id: 'l2', name: 'Cosmic Harp', rarity: 'lendário', price: 0, image: 'radial-gradient(circle at 30% 30%, #4338ca, #1e1b4b, #000000)' },
+    { id: 'l3', name: 'Godly Ax', rarity: 'lendário', price: 0, image: 'linear-gradient(135deg, #000000 0%, #333333 50%, #000000 100%)' },
+    { id: 'l4', name: 'Galaxy Beats', rarity: 'lendário', price: 0, image: 'radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%)' },
 ];
