@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '3.5.0';
+      const currentVersion = '4.0.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '3.5.0');
+    localStorage.setItem('chordRush_version', '4.0.0');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Set Raro Completo</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-white/20">V3.5.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Início da Era Épica</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">CHORD <span className="text-orange-500">IV</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
               <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
-                  <i className="fa-solid fa-microphone-lines text-xl"></i>
+                <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                  <i className="fa-solid fa-fire-amber text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo Vocal: Sonic Mic</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O <b>Sonic Mic (R5)</b> chegou para os cantores da escola brilharem no palco!</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Lendário: Molten Gold</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">A primeira peça da coleção Épica. A <b>Molten Gold (E1)</b> é forjada em ouro derretido e luz solar.</p>
                 </div>
               </div>
               <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-yellow-600/10 rounded-2xl flex items-center justify-center text-yellow-600 border border-yellow-600/20">
-                  <i className="fa-solid fa-guitar text-xl"></i>
+                <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-400 border border-yellow-500/20">
+                  <i className="fa-solid fa-gem text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Violão de Ouro: Golden Acoustic</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O <b>Golden Acoustic (R6)</b> completa o set raro. A banda está formada!</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nova Categoria: Épicos</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Cards luxuosos de <b>30.000 XP</b> agora estão disponíveis. Apenas para os mestres.</p>
                 </div>
               </div>
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                  <i className="fa-solid fa-check-double text-xl"></i>
+                  <i className="fa-solid fa-crown text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Coleção Rare Finalizada</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Todos os cards <b>Raros</b> estão disponíveis. Qual será seu próximo objetivo?</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Status de Elite</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Sua coleção agora suporta cards de raridade ÉPICA. Mostre seu poder no Ranking!</p>
                 </div>
               </div>
             </div>

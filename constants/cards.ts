@@ -23,7 +23,7 @@ export const CARDS: ExtendedCard[] = [
     { id: 'r6', name: 'Golden Acoustic', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r6.png)', isReady: true },
 
     // ÉPICO - 30,000 XP
-    { id: 'e1', name: 'Molten Gold', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
+    { id: 'e1', name: 'Molten Gold', rarity: 'épico', price: 30000, image: 'url(/assets/cards/e1.png)', isReady: true },
     { id: 'e2', name: 'Crimson Storm', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
     { id: 'e3', name: 'Deep Nebula', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
     { id: 'e4', name: 'Abyssal Key', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
