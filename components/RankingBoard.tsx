@@ -238,9 +238,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 {selectedCard ? (
                                     <>
-                                        {/* CARD BACKGROUND - ZOOM BALANCEADO PARA INSTRUMENTOS ROBUSTOS */}
+                                        {/* CARD BACKGROUND - ZOOM AJUSTADO PARA MOSTRAR TODO O INSTRUMENTO */}
                                         <div
-                                            className="absolute inset-0 bg-cover bg-[center_right_25%] opacity-90 transition-all duration-700 scale-[1.8] brightness-110 grayscale-[0.05]"
+                                            className="absolute inset-0 bg-cover bg-center opacity-95 transition-all duration-700 scale-[1.1] brightness-110"
                                             style={{ backgroundImage: selectedCard.image }}
                                         />
                                         {/* GRADIENTE FOCADO NA LEITURA (DA ESQUERDA PARA DIREITA) */}
