@@ -238,19 +238,19 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 {selectedCard ? (
                                     <>
-                                        {/* CARD BACKGROUND - MAIS VIVIDO */}
+                                        {/* CARD BACKGROUND - ZOOM ÉPICO PARA ELIMINAR MOLDURAS INTERNAS */}
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-70 transition-opacity duration-500"
+                                            className="absolute inset-0 bg-cover bg-center opacity-90 transition-all duration-700 scale-[2.5] brightness-110 grayscale-[0.1]"
                                             style={{ backgroundImage: selectedCard.image }}
                                         />
-                                        {/* GRADIENTE MAIS SUAVE PARA NÃO ESCURECER O MEIO */}
-                                        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/20 to-black/90" />
+                                        {/* GRADIENTE FOCADO NA LEITURA (DA ESQUERDA PARA DIREITA) */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
 
                                         {/* BRILHO LATERAL DE ACORDO COM A RARIDADE */}
-                                        <div className={`absolute left-0 top-0 bottom-0 w-1 flex flex-col`}>
-                                            <div className={`flex-1 ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400 shadow-[2px_0_15px_rgba(250,204,21,0.5)]' :
-                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500 shadow-[2px_0_15px_rgba(249,115,22,0.5)]' :
-                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400 shadow-[2px_0_15px_rgba(34,211,238,0.5)]' :
+                                        <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20">
+                                            <div className={`h-full ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400 shadow-[4px_0_20px_rgba(250,204,21,0.6)]' :
+                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500 shadow-[4px_0_20px_rgba(249,115,22,0.6)]' :
+                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400 shadow-[4px_0_20px_rgba(34,211,238,0.6)]' :
                                                             'bg-blue-400'
                                                 }`}></div>
                                         </div>
