@@ -11,8 +11,8 @@ export const CARDS: ExtendedCard[] = [
     { id: 'c2', name: 'Mystic Flute', rarity: 'comum', price: 5000, image: 'url(/assets/cards/c2.png)', isReady: true },
     { id: 'c3', name: 'Festive Tambourine', rarity: 'comum', price: 5000, image: 'url(/assets/cards/c3.png)', isReady: true },
     { id: 'c4', name: 'Space Triangle', rarity: 'comum', price: 5000, image: 'url(/assets/cards/c4.png)', isReady: true },
-    { id: 'c5', name: 'Indigo Beat', rarity: 'comum', price: 5000, image: 'url(/assets/cards/common.png)', isReady: false },
-    { id: 'c6', name: 'Carbon Note', rarity: 'comum', price: 5000, image: 'url(/assets/cards/common.png)', isReady: false },
+    { id: 'c5', name: 'Indigo Beat', rarity: 'comum', price: 5000, image: 'url(/assets/cards/c5.png)', isReady: true },
+    { id: 'c6', name: 'Carbon Note', rarity: 'comum', price: 5000, image: 'url(/assets/cards/c6.png)', isReady: true },
 
     // RARO - 10,000 XP
     { id: 'r1', name: 'Thunder Axe', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r1.png)', isReady: true },
