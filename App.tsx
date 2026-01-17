@@ -86,7 +86,7 @@ const App: React.FC = () => {
       }
       setSyncDone(true);
 
-      const currentVersion = '3.4.0';
+      const currentVersion = '3.5.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '3.4.0');
+    localStorage.setItem('chordRush_version', '3.5.0');
     setShowChangelog(false);
   };
 
@@ -493,35 +493,35 @@ const App: React.FC = () => {
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
             <div className="mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Novos Instrumentos</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-white/20">V3.4.0</span></h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Set Raro Completo</span>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-white/20">V3.5.0</span></h2>
             </div>
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
               <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
+                  <i className="fa-solid fa-microphone-lines text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novo Vocal: Sonic Mic</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O <b>Sonic Mic (R5)</b> chegou para os cantores da escola brilharem no palco!</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 flex-shrink-0 bg-yellow-600/10 rounded-2xl flex items-center justify-center text-yellow-600 border border-yellow-600/20">
+                  <i className="fa-solid fa-guitar text-xl"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Violão de Ouro: Golden Acoustic</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">O <b>Golden Acoustic (R6)</b> completa o set raro. A banda está formada!</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                  <i className="fa-solid fa-drum text-xl"></i>
+                  <i className="fa-solid fa-check-double text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nova Bateria: Volt Drums</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O card <b>Volt Drums (R4)</b> chegou para completar a banda com luzes neon esmeralda!</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-magenta-500/10 rounded-2xl flex items-center justify-center text-pink-500 border border-pink-500/20">
-                  <i className="fa-solid fa-keyboard text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Coleção Rare</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Agora a coleção conta com Guitarra, Baixo, Teclado e Bateria. Qual será o próximo?</p>
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                  <i className="fa-solid fa-address-card text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Dossiê Ativo</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O sistema de análise de perfis no ranking já está 100% estabilizado e visual.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Coleção Rare Finalizada</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Todos os cards <b>Raros</b> estão disponíveis. Qual será seu próximo objetivo?</p>
                 </div>
               </div>
             </div>

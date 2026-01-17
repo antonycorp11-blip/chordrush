@@ -19,8 +19,8 @@ export const CARDS: ExtendedCard[] = [
     { id: 'r2', name: 'Neon Bass', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r2.png)', isReady: true },
     { id: 'r3', name: 'Cyber Synth', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r3.png)', isReady: true },
     { id: 'r4', name: 'Volt Drums', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r4.png)', isReady: true },
-    { id: 'r5', name: 'Acid Green', rarity: 'raro', price: 10000, image: 'url(/assets/cards/rare.png)', isReady: false },
-    { id: 'r6', name: 'Vortex Violet', rarity: 'raro', price: 10000, image: 'url(/assets/cards/rare.png)', isReady: false },
+    { id: 'r5', name: 'Sonic Mic', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r5.png)', isReady: true },
+    { id: 'r6', name: 'Golden Acoustic', rarity: 'raro', price: 10000, image: 'url(/assets/cards/r6.png)', isReady: true },
 
     // ÉPICO - 30,000 XP
     { id: 'e1', name: 'Molten Gold', rarity: 'épico', price: 30000, image: 'url(/assets/cards/epic.png)', isReady: false },
