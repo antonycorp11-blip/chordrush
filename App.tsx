@@ -163,6 +163,10 @@ const App: React.FC = () => {
     }
     setLastSessionFirstChord(firstChord.symbol);
 
+    const deviceId = getDeviceId();
+    // Segurança: Avisa o banco que uma partida legítima começou
+    await supabase.rpc('start_game_session', { device_id_param: deviceId });
+
     setChordsPool(initialPool);
     setCurrentIndex(0);
     setCurrentOptions(generateOptions(initialPool[0]));
