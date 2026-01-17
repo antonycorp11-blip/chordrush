@@ -56,6 +56,7 @@ const App: React.FC = () => {
   const [showClefOpening, setShowClefOpening] = useState(false);
   const [clefReward, setClefReward] = useState<any>(null);
   const [activeOpeningMissionId, setActiveOpeningMissionId] = useState<string | null>(null);
+  const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [missionProgress, setMissionProgress] = useState({
     bemol: 0,
     sustenido: 0,
@@ -412,7 +413,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.4.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.5.0</p>
               </div>
             </div>
 
@@ -578,43 +579,55 @@ const App: React.FC = () => {
                             </div>
                           ) : dailyMissions.length > 0 ? (
                             dailyMissions.map((mission) => (
-                              <div key={mission.id} className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex items-center justify-between gap-4 ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'}`}>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
-                                      Recompensa Sorteada
-                                    </span>
-                                    {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
-                                  </div>
-                                  <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
+                              <div
+                                key={mission.id}
+                                onClick={() => setSelectedMissionId(selectedMissionId === mission.id ? null : mission.id)}
+                                className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex flex-col gap-2 cursor-pointer ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'} ${selectedMissionId === mission.id ? 'ring-2 ring-orange-500/30' : ''}`}
+                              >
+                                <div className="flex items-center justify-between gap-4 w-full">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
+                                        Recompensa Sorteada
+                                      </span>
+                                      {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
+                                    </div>
+                                    <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
 
-                                  <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
-                                      style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
-                                    />
+                                    <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
+                                        style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
+                                      />
+                                    </div>
+                                    <div className="flex justify-between mt-1">
+                                      <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
+                                        {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
+                                      </span>
+                                    </div>
                                   </div>
-                                  <div className="flex justify-between mt-1">
-                                    <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
-                                      {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
-                                    </span>
-                                  </div>
+
+                                  {mission.is_completed && !mission.reward_claimed ? (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); openClef(mission.id); }}
+                                      className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
+                                    >
+                                      Abrir
+                                    </button>
+                                  ) : mission.reward_claimed ? (
+                                    <div className="opacity-30">
+                                      <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
+                                    </div>
+                                  ) : (
+                                    <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
+                                      <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
+                                    </div>
+                                  )}
                                 </div>
 
-                                {mission.is_completed && !mission.reward_claimed ? (
-                                  <button
-                                    onClick={() => openClef(mission.id)}
-                                    className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
-                                  >
-                                    Abrir
-                                  </button>
-                                ) : mission.reward_claimed ? (
-                                  <div className="opacity-30">
-                                    <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
-                                  </div>
-                                ) : (
-                                  <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
-                                    <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
+                                {selectedMissionId === mission.id && (
+                                  <div className="border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top duration-300">
+                                    <p className="text-[9px] text-white/50 font-medium leading-relaxed uppercase tracking-wider">{mission.description}</p>
                                   </div>
                                 )}
                               </div>
@@ -645,8 +658,8 @@ const App: React.FC = () => {
             </div>
             <div className="flex justify-between items-center mb-2 relative">
               {/* Overlay de Missões (Mini) */}
-              <div className="absolute top-20 left-0 flex flex-col gap-2 w-44 pointer-events-none z-10">
-                {dailyMissions.filter(m => !m.is_completed).slice(0, 3).map(m => {
+              <div className="absolute top-24 left-0 right-0 flex justify-center gap-2 pointer-events-none z-10 px-4 scale-90 sm:scale-100">
+                {dailyMissions.filter(m => !m.is_completed).slice(0, 2).map(m => {
                   let currentProgress = 0;
                   switch (m.goal_type) {
                     case 'bemol_count': currentProgress = missionProgress.bemol; break;
@@ -657,16 +670,16 @@ const App: React.FC = () => {
                     case 'perfect_sequence': currentProgress = missionProgress.perfectCount; break;
                   }
                   return (
-                    <div key={m.id} className="bg-black/80 backdrop-blur-xl p-3 rounded-xl border border-white/10 shadow-2xl animate-in slide-in-from-left duration-500">
-                      <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-tight mb-1">{m.title}</div>
-                      <div className="flex items-center justify-between mt-1 gap-3">
-                        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <div key={m.id} className="bg-black/80 backdrop-blur-xl p-3 rounded-xl border border-white/10 shadow-2xl animate-in slide-in-from-top duration-500 w-44">
+                      <div className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-tight mb-1 truncate">{m.title}</div>
+                      <div className="flex items-center justify-between mt-1 gap-2">
+                        <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                           <div
                             className="h-full bg-orange-500 transition-all duration-500 rounded-full"
                             style={{ width: `${Math.min(100, (currentProgress / m.goal_value) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-black text-white tabular-nums">{currentProgress}/{m.goal_value}</span>
+                        <span className="text-[9px] font-black text-white tabular-nums shrink-0">{currentProgress}/{m.goal_value}</span>
                       </div>
                     </div>
                   );
