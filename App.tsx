@@ -25,7 +25,8 @@ const App: React.FC = () => {
         playerName: parsed.playerName || '',
         highScore: parsed.highScore || 0,
         totalXP: parsed.totalXP || 0,
-        selectedCardId: parsed.selectedCardId
+        selectedCardId: parsed.selectedCardId,
+        accumulatedXP: parsed.accumulatedXP || 0
       };
     }
     return { playerName: '', highScore: 0, totalXP: 0, accumulatedXP: 0 };
@@ -46,6 +47,7 @@ const App: React.FC = () => {
   const [combo, setCombo] = useState(0);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showPatentsModal, setShowPatentsModal] = useState(false);
+  const [syncDone, setSyncDone] = useState(false);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,8 +83,8 @@ const App: React.FC = () => {
           accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
         }));
       }
+      setSyncDone(true);
 
-      // Check Version for Changelog
       const currentVersion = '3.0.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
@@ -135,19 +137,24 @@ const App: React.FC = () => {
   const startNewGame = async (selectedMode: GameMode) => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+
     isEndingRef.current = false;
-    await savePlayerProfile();
     setMode(selectedMode);
     setCurrentLevel(1);
     setTimeLeft(60);
     setScore(0);
     setSessionXP(0);
-    setTimeAdded(null);
     setCombo(0);
     setFeedback(null);
-    let initialPool = getChordsForLevel(1);
-    if (lastSessionFirstChord && initialPool[0].symbol === lastSessionFirstChord) initialPool = shuffle(initialPool);
-    setLastSessionFirstChord(initialPool[0].symbol);
+
+    const initialPool = getChordsForLevel(1);
+    let firstChord = initialPool[0];
+    if (firstChord.symbol === lastSessionFirstChord) {
+      shuffle(initialPool);
+      firstChord = initialPool[0];
+    }
+    setLastSessionFirstChord(firstChord.symbol);
+
     setChordsPool(initialPool);
     setCurrentIndex(0);
     setCurrentOptions(generateOptions(initialPool[0]));
@@ -199,7 +206,7 @@ const App: React.FC = () => {
       setTimeLeft(prev => Math.min(prev + bonus, 600));
       setTimeAdded(bonus);
       setTimeout(() => setTimeAdded(null), 1000);
-      if (score > 0 && (score + 1) % 10 === 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
+      if (scoreRef.current > 0 && (scoreRef.current + 1) % 10 === 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
     } else {
       setFeedback({ type: 'wrong', note: currentChord.note });
       setCombo(0);
@@ -234,13 +241,11 @@ const App: React.FC = () => {
   const isOnFire = combo >= 7;
   const glowIntensity = Math.min(combo * 5, 50);
 
-  // Get Equipped Card
   const selectedEffectCard = CARDS.find(c => c.id === stats.selectedCardId);
 
   return (
     <div className={`fixed inset-0 transition-colors duration-1000 ${gameState === GameState.PLAYING ? THEMES[currentLevel as keyof typeof THEMES] : 'bg-[#0a0a0a]'} text-white flex flex-col items-center select-none overflow-hidden`}>
 
-      {/* MENU SCREEN */}
       {gameState === GameState.MENU && (
         <div className="w-full h-full max-h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative bg-[#0a0a0a]">
           <div className="w-full max-w-sm flex flex-col items-center gap-6 z-10">
@@ -263,86 +268,78 @@ const App: React.FC = () => {
             </div>
 
             <div className="w-full space-y-4">
-              {!stats.playerName && (
-                <div className="space-y-2">
-                  <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">Identifique-se para Jogar</p>
-                  <input
-                    type="text"
-                    placeholder="DIGITE SEU NOME"
-                    value={stats.playerName}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
-                  />
+              {(!stats.playerName && syncDone) ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
+                  <div className="space-y-2">
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">Identifique-se para Jogar</p>
+                    <input
+                      type="text"
+                      placeholder="DIGITE SEU NOME"
+                      value={stats.playerName || ''}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
+                    />
+                  </div>
+                  <button
+                    onClick={() => stats.playerName.trim() && savePlayerProfile()}
+                    disabled={!stats.playerName.trim()}
+                    className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
+                  >
+                    CONFIRMAR NOME
+                  </button>
                 </div>
-              )}
+              ) : (
+                <div className="space-y-4 w-full">
+                  <button
+                    onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
+                    disabled={!stats.playerName.trim() || !syncDone}
+                    className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
+                  >
+                    JOGAR AGORA
+                  </button>
 
-              <button
-                onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
-                disabled={!stats.playerName.trim()}
-                className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${!stats.playerName.trim() ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
-              >
-                JOGAR AGORA
-              </button>
+                  <div className="relative w-full group">
+                    <button
+                      onClick={() => setGameState(GameState.STORE)}
+                      className="w-full relative overflow-hidden bg-white/5 border-2 border-white/20 text-white font-black p-5 rounded-2xl text-xl transition-all flex items-center justify-center gap-4 hover:bg-white/10 active:scale-95"
+                    >
+                      <i className="fa-solid fa-cart-shopping text-2xl text-orange-500"></i>
+                      LOJA DE CARDS
+                    </button>
+                    <div className="absolute -top-2 -right-2 bg-green-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12 z-20 animate-pulse">
+                      LOJA ABERTA!
+                    </div>
+                  </div>
 
-              <div className="relative w-full group">
-                <button
-                  onClick={() => setGameState(GameState.STORE)}
-                  className="w-full relative overflow-hidden bg-white/5 border-2 border-white/20 text-white font-black p-5 rounded-2xl text-xl transition-all flex items-center justify-center gap-4 hover:bg-white/10 active:scale-95"
-                >
-                  <i className="fa-solid fa-cart-shopping text-2xl text-orange-500"></i>
-                  LOJA DE CARDS
-                </button>
-                <div className="absolute -top-2 -right-2 bg-green-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12 z-20 animate-pulse">
-                  LOJA ABERTA!
-                </div>
-              </div>
+                  <button
+                    onClick={() => setGameState(GameState.RANKING)}
+                    className="w-full bg-white/5 border-2 border-white/10 text-yellow-500 font-black p-4 rounded-2xl text-lg active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-white/10"
+                  >
+                    <i className="fa-solid fa-trophy text-xl"></i>
+                    RANKING GLOBAL
+                  </button>
 
-              <button
-                onClick={() => setGameState(GameState.RANKING)}
-                className="w-full bg-white/5 border-2 border-white/10 text-yellow-500 font-black p-4 rounded-2xl text-lg active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-white/10"
-              >
-                <i className="fa-solid fa-trophy text-xl"></i>
-                RANKING GLOBAL
-              </button>
-            </div>
-
-            {/* BOX DE JOGADOR - LIMPO SEM SPOILERS */}
-            {(() => {
-              // Título baseado no XP ACUMULADO, não no saldo
-              const title = getPlayerTitle(stats.accumulatedXP || 0);
-              const progress = getNextLevelProgress(stats.accumulatedXP || 0);
-              return (
-                <div
-                  className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 ${selectedEffectCard ? 'border-orange-500/50' : 'bg-neutral-900/80 border-white/10'}`}
-                >
-                  {/* BACKGROUND DO CARD EQUIPADO */}
+                  {syncDone && (
+                    {/* PROFILE STATUS BOX */ }
+                    < div onClick={() => setShowPatentsModal(true)} className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 cursor-pointer active:scale-[0.98] ${selectedEffectCard ? 'border-orange-500/50' : 'bg-neutral-900/80 border-white/10'}`}>
                   {selectedEffectCard && (
                     <>
-                      <div
-                        className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]"
-                        style={{ backgroundImage: selectedEffectCard.image }}
-                      />
+                      <div className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]" style={{ backgroundImage: selectedEffectCard.image }} />
                       <div className="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-black" />
                     </>
                   )}
                   <div className="flex flex-col relative z-10 min-w-0 flex-1">
-                    <button
-                      onClick={() => setShowPatentsModal(true)}
-                      className={`self-start px-3 py-1 rounded-full border mb-1.5 transition-all active:scale-95 flex items-center gap-2 group/btn ${title.border}`}
-                    >
-                      <span className={`text-[8px] uppercase font-black tracking-widest ${title.style}`}>
-                        {title.title}
+                    <div className={`self-start px-3 py-1 rounded-full border mb-1.5 transition-all flex items-center gap-2 ${getPlayerTitle(stats.accumulatedXP || 0).border}`}>
+                      <span className={`text-[8px] uppercase font-black tracking-widest ${getPlayerTitle(stats.accumulatedXP || 0).style}`}>
+                        {getPlayerTitle(stats.accumulatedXP || 0).title}
                       </span>
-                      <i className={`fa-solid fa-circle-info text-[8px] opacity-20 group-hover/btn:opacity-50 ${title.style}`}></i>
-                    </button>
+                    </div>
                     <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
                     <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase">
                       {stats.playerName || '---'}
                     </span>
-
-                    {/* Barra de Progresso da Patente */}
                     <div className="w-20 h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
-                      <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${progress}%` }}></div>
+                      <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: `${getNextLevelProgress(stats.accumulatedXP || 0)}%` }}></div>
                     </div>
                   </div>
                   <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
@@ -354,13 +351,13 @@ const App: React.FC = () => {
                     <span className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1 lowercase">Recorde: {stats.highScore} pts</span>
                   </div>
                 </div>
-              );
-            })()}
+              )}
+            </div>
+              )}
           </div>
         </div>
       )}
 
-      {/* PLAYING SCREEN */}
       {gameState === GameState.PLAYING && (
         <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
           <div className="flex justify-end mb-2">
@@ -406,7 +403,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* GAME OVER SCREEN */}
       {gameState === GameState.GAMEOVER && (
         <div className="w-full h-full max-h-screen flex flex-col items-center justify-between p-6 bg-[#0a0a0a] pop-in overflow-hidden text-center pt-8 pb-8">
           <div className="w-full">
@@ -432,10 +428,8 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* RANKING SCREEN */}
       {gameState === GameState.RANKING && (<RankingBoard onBack={() => setGameState(GameState.MENU)} />)}
 
-      {/* STORE SCREEN */}
       {gameState === GameState.STORE && (
         <CardStore
           onBack={() => setGameState(GameState.MENU)}
@@ -446,24 +440,18 @@ const App: React.FC = () => {
           onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
         />
       )}
-      {/* CHANGELOG MODAL */}
+
       {showChangelog && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full max-w-md bg-neutral-900 border-2 border-orange-500/30 rounded-[40px] p-8 relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-yellow-500"></div>
-
-            <button
-              onClick={closeChangelog}
-              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors"
-            >
+            <button onClick={closeChangelog} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
-
             <div className="mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Atualização Disponível</span>
-              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">LEVEL SYSTEM <span className="text-white/20">V3.0.0</span></h2>
+              <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">LEVEL SYSTEM <span className="text-white/20">V3.0.0</span></h2>
             </div>
-
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
@@ -471,67 +459,35 @@ const App: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Novas Patentes</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Sistema de títulos musicais (Iniciante, Solista, Mestre...) baseado no seu XP. Confira sua barra de progresso no menu!</p>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Sistema de títulos musicais baseado no seu XP. Sua patente não cai mais ao comprar cards!</p>
                 </div>
               </div>
-
               <div className="flex gap-4">
                 <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
                   <i className="fa-solid fa-cart-shopping text-xl"></i>
                 </div>
                 <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Loja de Cards</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Use seu XP para desbloquear estilos visuais exclusivos. Equipar um card muda seu visual no Ranking Mundial!</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-400 border border-green-500/20">
-                  <i className="fa-solid fa-clock-rotate-left text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Relógio Calibrado</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">O tempo das partidas no ranking agora é sincronizado com o servidor. 100% preciso para todos!</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="w-10 h-10 flex-shrink-0 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 border border-purple-500/20">
-                  <i className="fa-solid fa-palette text-xl"></i>
-                </div>
-                <div>
-                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Pixel Art Em Breve</h4>
-                  <p className="text-[11px] text-white/50 leading-relaxed">Artes Ultra Premium estão em fase final de desenho. Cards em produção agora possuem selo de destaque.</p>
+                  <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Loja Premium</h4>
+                  <p className="text-[11px] text-white/50 leading-relaxed">Novo layout em grade para as novas artes ultra premium que estão chegando.</p>
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={closeChangelog}
-              className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl"
-            >
-              VAMOS JOGAR!
-            </button>
+            <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">VAMOS JOGAR!</button>
           </div>
         </div>
       )}
-      {/* PATENTS MODAL */}
+
       {showPatentsModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in zoom-in duration-300 shadow-2xl">
           <div className="w-full max-w-sm bg-neutral-900 border-2 border-white/10 rounded-[40px] p-8 relative shadow-2xl overflow-hidden">
-            <button
-              onClick={() => setShowPatentsModal(false)}
-              className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors"
-            >
+            <button onClick={() => setShowPatentsModal(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
               <i className="fa-solid fa-xmark text-xl"></i>
             </button>
-
             <div className="mb-8 text-center sm:text-left">
               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Hierarquia Musical</span>
               <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">PATENTES</h2>
               <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-2 px-1">Seu XP Total desbloqueia novos títulos</p>
             </div>
-
             <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar">
               {[
                 { name: 'Iniciante', xp: 0, style: 'text-white/40', bg: 'bg-white/5' },
@@ -541,7 +497,7 @@ const App: React.FC = () => {
                 { name: 'Virtuoso', xp: 50000, style: 'text-cyan-400', bg: 'bg-cyan-400/10' },
                 { name: 'Mestre', xp: 75000, style: 'text-purple-400', bg: 'bg-purple-400/10' },
                 { name: 'Lenda', xp: 100000, style: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-              ].map((p, i) => (
+              ].reverse().map((p, i) => (
                 <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border border-white/5 ${p.bg}`}>
                   <span className={`font-black uppercase tracking-widest text-[11px] ${p.style}`}>{p.name}</span>
                   <div className="flex items-center gap-2">
@@ -549,15 +505,9 @@ const App: React.FC = () => {
                     <span className="text-white font-black tabular-nums text-xs">{p.xp.toLocaleString()} <span className="text-[8px] opacity-30">XP</span></span>
                   </div>
                 </div>
-              )).reverse()}
+              ))}
             </div>
-
-            <button
-              onClick={() => setShowPatentsModal(false)}
-              className="w-full mt-8 bg-orange-500 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-95 transition-all shadow-xl"
-            >
-              FECHAR LISTA
-            </button>
+            <button onClick={() => setShowPatentsModal(false)} className="w-full mt-8 bg-orange-500 text-white font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-95 transition-all shadow-xl">FECHAR LISTA</button>
           </div>
         </div>
       )}
