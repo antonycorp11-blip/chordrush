@@ -11,6 +11,7 @@ export interface GameStats {
   playerName: string;
   highScore: number;
   totalXP: number;
+  selectedCardId?: string;
 }
 
 export enum GameMode {
@@ -22,7 +23,8 @@ export enum GameState {
   MENU = 'MENU',
   PLAYING = 'PLAYING',
   GAMEOVER = 'GAMEOVER',
-  RANKING = 'RANKING'
+  RANKING = 'RANKING',
+  STORE = 'STORE'
 }
 
 export interface RankingEntry {
@@ -30,4 +32,15 @@ export interface RankingEntry {
   score: number;
   level: number;
   device_id: string;
+  selected_card_id?: string;
+}
+
+export type Rarity = 'comum' | 'raro' | 'épico' | 'lendário';
+
+export interface Card {
+  id: string;
+  name: string;
+  rarity: Rarity;
+  price: number;
+  image: string;
 }

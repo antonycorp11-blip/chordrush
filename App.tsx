@@ -12,6 +12,7 @@ import {
 import { NoteButton } from './components/NoteButton';
 import { supabase, getDeviceId } from './utils/supabaseClient';
 import { RankingBoard } from './components/RankingBoard';
+import { CardStore } from './components/CardStore';
 
 const App: React.FC = () => {
   // Global State com carregamento inicial robusto do LocalStorage
@@ -22,7 +23,8 @@ const App: React.FC = () => {
       return {
         playerName: parsed.playerName || '',
         highScore: parsed.highScore || 0,
-        totalXP: parsed.totalXP || 0
+        totalXP: parsed.totalXP || 0,
+        selectedCardId: parsed.selectedCardId
       };
     }
     return { playerName: '', highScore: 0, totalXP: 0 };
@@ -61,6 +63,28 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('chordRush_stats', JSON.stringify(stats));
   }, [stats]);
+
+  // Sync profile from backend on mount
+  useEffect(() => {
+    const syncProfile = async () => {
+      const deviceId = getDeviceId();
+      const { data, error } = await supabase
+        .from('players')
+        .select('name, selected_card_id, xp')
+        .eq('device_id', deviceId)
+        .maybeSingle();
+
+      if (data) {
+        setStats(prev => ({
+          ...prev,
+          playerName: data.name || prev.playerName,
+          selectedCardId: data.selected_card_id,
+          totalXP: data.xp || prev.totalXP
+        }));
+      }
+    };
+    syncProfile();
+  }, []);
 
   // Função para atualizar nome e salvar imediatamente
   const handleNameChange = (name: string) => {
@@ -205,8 +229,15 @@ const App: React.FC = () => {
       totalXP: prev.totalXP + finalXP
     }));
 
-    // Envia score real para o backend
+    // Envia score real para o backend e atualiza XP
     await saveScoreToBackend(finalScore, finalLevel);
+
+    // Atualiza XP no banco de dados
+    const deviceId = getDeviceId();
+    await supabase.rpc('increment_player_xp', {
+      device_id_param: deviceId,
+      xp_to_add: finalXP
+    });
   };
 
   const handleAnswer = (selectedNote: NoteName) => {
@@ -324,6 +355,14 @@ const App: React.FC = () => {
               >
                 <i className="fa-solid fa-trophy text-xl"></i>
                 RANKING SEMANAL
+              </button>
+
+              <button
+                onClick={() => setGameState(GameState.STORE)}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-700 text-white font-black p-4 rounded-xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-blue-900 flex items-center justify-center gap-3"
+              >
+                <i className="fa-solid fa-store text-xl"></i>
+                LOJA DE CARDS
               </button>
             </div>
 
@@ -504,6 +543,17 @@ const App: React.FC = () => {
       {/* RANKING SCREEN */}
       {gameState === GameState.RANKING && (
         <RankingBoard onBack={() => setGameState(GameState.MENU)} />
+      )}
+
+      {/* STORE SCREEN */}
+      {gameState === GameState.STORE && (
+        <CardStore
+          onBack={() => setGameState(GameState.MENU)}
+          totalXP={stats.totalXP}
+          onXPUpdate={(newXP) => setStats(prev => ({ ...prev, totalXP: newXP }))}
+          selectedCardId={stats.selectedCardId}
+          onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
+        />
       )}
     </div>
   );

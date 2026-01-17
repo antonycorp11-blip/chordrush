@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, getDeviceId } from '../utils/supabaseClient';
 import { RankingEntry } from '../types';
+import { CARDS } from '../constants/cards';
 
 interface RankingBoardProps {
     onBack: () => void;
@@ -99,21 +100,31 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             ranking.map((entry, index) => {
                                 const isMe = entry.device_id === myDeviceId;
                                 const isTop3 = index < 3;
+                                const playerCard = entry.selected_card_id ? CARDS.find(c => c.id === entry.selected_card_id) : null;
 
                                 return (
                                     <div
                                         key={index}
+                                        style={playerCard ? { background: playerCard.image } : {}}
                                         className={`
-                      group relative flex items-center justify-between p-5 rounded-3xl border transition-all duration-300
-                      ${isMe
-                                                ? 'bg-gradient-to-br from-orange-600/30 to-orange-900/40 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.3)] scale-[1.03] z-10'
-                                                : isTop3
-                                                    ? 'bg-white/10 border-white/10 hover:border-white/20 hover:bg-white/15'
-                                                    : 'bg-white/5 border-transparent hover:bg-white/10'
+                                            group relative flex items-center justify-between p-5 rounded-3xl border transition-all duration-300
+                                            ${isMe
+                                                ? playerCard
+                                                    ? 'border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.3)] scale-[1.03] z-10'
+                                                    : 'bg-gradient-to-br from-orange-600/30 to-orange-900/40 border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.3)] scale-[1.03] z-10'
+                                                : playerCard
+                                                    ? 'border-white/20'
+                                                    : isTop3
+                                                        ? 'bg-white/10 border-white/10 hover:border-white/20 hover:bg-white/15'
+                                                        : 'bg-white/5 border-transparent hover:bg-white/10'
                                             }
-                    `}
+                                        `}
                                     >
-                                        <div className="flex items-center gap-5">
+                                        {playerCard && (
+                                            <div className="absolute inset-0 bg-black/20 rounded-3xl pointer-events-none"></div>
+                                        )}
+
+                                        <div className="flex items-center gap-5 z-10">
                                             <div className="relative">
                                                 <div className={`
                           w-12 h-12 flex items-center justify-center rounded-2xl font-black text-xl shadow-inner
@@ -144,7 +155,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                             </div>
                                         </div>
 
-                                        <div className="text-right">
+                                        <div className="text-right z-10">
                                             <div className="flex flex-col items-end">
                                                 <span className={`text-3xl font-black leading-none ${isMe ? 'text-orange-400' : index === 0 ? 'text-yellow-400' : 'text-white'} tabular-nums`}>
                                                     {entry.score}
