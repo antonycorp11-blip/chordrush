@@ -131,8 +131,8 @@ export const CardStore: React.FC<CardStoreProps> = ({
                             LOJA DE <span className="text-orange-500">CARDS</span>
                         </h2>
                         <div className="mt-2 bg-white/5 px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
-                            <i className="fa-solid fa-wallet text-[10px] text-orange-500"></i>
-                            <span className="text-[11px] font-black text-white tabular-nums">{totalXP.toLocaleString()} <span className="text-[8px] opacity-40 uppercase">Saldo</span></span>
+                            <i className="fa-solid fa-coins text-[10px] text-yellow-500"></i>
+                            <span className="text-[11px] font-black text-white tabular-nums">{totalXP.toLocaleString()} <span className="text-[8px] opacity-40 uppercase">Coins</span></span>
                         </div>
                     </div>
                 </div>
