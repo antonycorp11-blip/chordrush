@@ -238,7 +238,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.6.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.6.1</p>
               </div>
             </div>
 
