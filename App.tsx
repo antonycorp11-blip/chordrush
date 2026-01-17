@@ -82,28 +82,33 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const syncProfile = async () => {
-      const deviceId = getDeviceId();
-      const { data } = await supabase
-        .from('players')
-        .select('name, selected_card_id, xp, total_xp')
-        .eq('device_id', deviceId)
-        .maybeSingle();
+      try {
+        const deviceId = getDeviceId();
+        const { data } = await supabase
+          .from('players')
+          .select('name, selected_card_id, xp, total_xp')
+          .eq('device_id', deviceId)
+          .maybeSingle();
 
-      if (data) {
-        setStats(prev => ({
-          ...prev,
-          playerName: data.name || prev.playerName,
-          selectedCardId: data.selected_card_id,
-          totalXP: (data.xp !== null && data.xp !== undefined) ? data.xp : prev.totalXP,
-          accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
-        }));
+        if (data) {
+          setStats(prev => ({
+            ...prev,
+            playerName: data.name || prev.playerName,
+            selectedCardId: data.selected_card_id,
+            totalXP: (data.xp !== null && data.xp !== undefined) ? data.xp : prev.totalXP,
+            accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
+          }));
 
-        // Buscar missões diárias após o sync do perfil
-        fetchDailyMissions();
+          // Buscar missões diárias após o sync do perfil
+          fetchDailyMissions();
+        }
+      } catch (error) {
+        console.error('Error syncing profile:', error);
+      } finally {
+        setSyncDone(true);
       }
-      setSyncDone(true);
 
-      const currentVersion = '6.1.0';
+      const currentVersion = '6.3.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -113,7 +118,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '6.1.0');
+    localStorage.setItem('chordRush_version', '6.3.0');
     setShowChangelog(false);
   };
 
@@ -145,11 +150,11 @@ const App: React.FC = () => {
       setLoadingMission(true);
       const deviceId = getDeviceId();
       const { data, error } = await supabase.rpc('get_or_assign_daily_mission', {
-        p_device_id: deviceId
+        device_id_param: deviceId
       });
 
       if (error) throw error;
-      if (data) setDailyMissions(data);
+      setDailyMissions(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Erro ao buscar missões:', err);
     } finally {
@@ -205,7 +210,7 @@ const App: React.FC = () => {
   const openClef = async (missionId: string) => {
     try {
       const { data, error } = await supabase.rpc('open_music_clef', {
-        p_mission_id: missionId
+        mission_id_param: missionId
       });
 
       if (error) throw error;
@@ -250,8 +255,8 @@ const App: React.FC = () => {
     setLastSessionFirstChord(firstChord.symbol);
 
     const deviceId = getDeviceId();
-    // Segurança: Avisa o banco que uma partida legítima começou
-    await supabase.rpc('start_game_session', { device_id_param: deviceId });
+    // Segurança: Avisa o banco que uma partida legítima começou (Não bloqueamos para agilizar o início)
+    supabase.rpc('start_game_session', { device_id_param: deviceId });
 
     setChordsPool(initialPool);
     setCurrentIndex(0);
@@ -380,7 +385,7 @@ const App: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const progressPercentage = (score % 10) * 10;
+  const progressPercentage = (hits % 10) * 10;
   const isGlowing = combo >= 3;
   const isOnFire = combo >= 7;
   const glowIntensity = Math.min(combo * 5, 50);
@@ -407,7 +412,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.2.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.3.0</p>
               </div>
             </div>
 
