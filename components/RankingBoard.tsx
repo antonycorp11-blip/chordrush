@@ -34,11 +34,19 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 setDrift(localNow - serverLatest);
             }
 
+            // Pegar o início da semana (Segunda-feira 00:00)
+            const d = new Date();
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const startOfWeek = new Date(d.setDate(diff));
+            startOfWeek.setHours(0, 0, 0, 0);
+
             const { data: scoresData, error: sError } = await supabase
                 .from('scores')
                 .select('player_id, score, created_at')
+                .gte('created_at', startOfWeek.toISOString())
                 .order('score', { ascending: false })
-                .limit(500);
+                .limit(200);
 
             if (sError) throw sError;
             if (!scoresData || scoresData.length === 0) {
@@ -167,8 +175,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     <i className="fa-solid fa-chevron-left text-xl"></i>
                 </button>
                 <div className="flex flex-col items-end text-right">
-                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V5.0.0 • Era Lendária</span>
+                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">SEMANAL</span></h2>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V6.6.0 • Premiação Ativa</span>
                 </div>
             </div>
 
