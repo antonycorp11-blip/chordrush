@@ -247,10 +247,32 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         }`} />
                                 )}
 
-                                {/* EFEITO LENDÁRIO DE RAIOS (EXCLUSIVO) */}
+                                {/* EFEITO LENDÁRIO: ELEMENTOS GRÁFICOS REAIS */}
                                 {selectedCard?.rarity === 'lendário' && (
-                                    <div className="absolute inset-x-0 inset-y-[-50%] z-0 animate-[spin_12s_linear_infinite] opacity-30 pointer-events-none">
-                                        <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,rgba(250,204,21,0.4)_20deg,transparent_40deg,rgba(250,204,21,0.4)_60deg,transparent_80deg)]" />
+                                    <div className="absolute inset-0 z-0 pointer-events-none">
+                                        {/* RAIOS DE LUZ FÍSICOS (DENTRO E FORA) */}
+                                        <div className="absolute inset-x-[-100%] inset-y-[-100%] animate-[spin_15s_linear_infinite] opacity-40">
+                                            {[...Array(8)].map((_, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="absolute top-1/2 left-1/2 w-[300%] h-6 bg-gradient-to-r from-transparent via-yellow-400/30 to-transparent -translate-x-1/2 -translate-y-1/2"
+                                                    style={{ transform: `translate(-50%, -50%) rotate(${i * 45}deg)` }}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        {/* ESTRELAS/BRILHOS QUE PULAM NO CARD */}
+                                        <div className="absolute inset-0 z-20">
+                                            <div className="absolute top-[20%] right-[15%] animate-bounce opacity-80">
+                                                <i className="fa-solid fa-star text-[10px] text-yellow-200 drop-shadow-[0_0_8px_white]"></i>
+                                            </div>
+                                            <div className="absolute bottom-[25%] left-[30%] animate-pulse opacity-60" style={{ animationDelay: '1s' }}>
+                                                <i className="fa-solid fa-star text-[8px] text-yellow-100 drop-shadow-[0_0_5px_white]"></i>
+                                            </div>
+                                            <div className="absolute top-[50%] right-[40%] animate-ping opacity-30" style={{ animationDelay: '0.5s' }}>
+                                                <i className="fa-solid fa-star text-[6px] text-white"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
@@ -268,13 +290,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
                                             {/* BRILHO LATERAL CRISTALINO */}
                                             <div className="absolute left-0 top-0 bottom-0 w-1.5 z-20 overflow-hidden">
-                                                <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-500 shadow-[0_0_15px_rgba(250,204,21,0.8)]' :
+                                                <div className={`h-full relative ${selectedCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-600 shadow-[0_0_15px_rgba(250,204,21,1)]' :
                                                         selectedCard.rarity === 'épico' ? 'bg-orange-500' :
                                                             selectedCard.rarity === 'raro' ? 'bg-cyan-400' :
                                                                 'bg-blue-400'
                                                     }`}>
-                                                    {/* EFEITO DE BRILHO INTERNO NA BARRA */}
-                                                    <div className={`absolute inset-0 ${selectedCard.rarity === 'lendário' ? 'animate-[ping_3s_infinite] bg-white/60' : 'bg-white/40 animate-[pulse_2s_infinite]'}`}></div>
+                                                    {/* VARREDURA DE BRILHO (DIAMOND SWEEP) */}
+                                                    <div className={`absolute inset-0 bg-gradient-to-t from-transparent via-white/80 to-transparent ${selectedCard.rarity === 'lendário' ? 'animate-[bounce_2s_infinite]' : 'bg-white/40 animate-[pulse_2s_infinite]'}`}></div>
                                                 </div>
                                             </div>
                                         </>
