@@ -10,9 +10,25 @@ export interface Chord {
 export interface GameStats {
   playerName: string;
   highScore: number;
-  totalXP: number;      // Saldo para gastar
-  accumulatedXP: number; // XP Total da vida (para patentes)
+  totalXP: number;      // Saldo de Acorde Coins (para gastar na loja)
+  accumulatedXP: number; // XP de Patente (acumulado da vida)
   selectedCardId?: string;
+}
+
+export interface Mission {
+  id: string;
+  title: string;
+  description: string;
+  goal_type: string;
+  goal_value: number;
+  reward_rarity: Rarity;
+}
+
+export interface PlayerMission extends Mission {
+  current_value: number;
+  is_completed: boolean;
+  reward_claimed: boolean;
+  assigned_at: string;
 }
 
 export enum GameMode {
@@ -35,8 +51,8 @@ export interface RankingEntry {
   level: number;
   device_id: string;
   selected_card_id?: string;
-  xp: number;             // Saldo
-  total_xp: number;       // Acumulado
+  xp: number;             // Acorde Coins (Saldo)
+  total_xp: number;       // Patente XP (Acumulado)
   created_at: string;
 }
 

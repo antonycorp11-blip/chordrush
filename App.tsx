@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GameState, GameStats, GameMode, Chord, NoteName } from './types';
+import { GameState, GameStats, GameMode, Chord, NoteName, PlayerMission } from './types';
 import { THEMES } from './constants';
 import {
   getChordsForLevel,
@@ -15,6 +15,7 @@ import { RankingBoard } from './components/RankingBoard';
 import { CardStore } from './components/CardStore';
 import { CARDS } from './constants/cards';
 import { getPlayerTitle, getNextLevelProgress } from './utils/titles';
+import { ClefOpeningModal } from './components/ClefOpeningModal';
 
 const App: React.FC = () => {
   const [stats, setStats] = useState<GameStats>(() => {
@@ -49,6 +50,17 @@ const App: React.FC = () => {
   const [showPatentsModal, setShowPatentsModal] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [dailyMission, setDailyMission] = useState<PlayerMission | null>(null);
+  const [loadingMission, setLoadingMission] = useState(false);
+  const [showClefOpening, setShowClefOpening] = useState(false);
+  const [clefReward, setClefReward] = useState<any>(null);
+  const [missionProgress, setMissionProgress] = useState({
+    bemol: 0,
+    sustenido: 0,
+    minor: 0,
+    perfectCount: 0,
+    maxCombo: 0
+  });
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,6 +95,9 @@ const App: React.FC = () => {
           totalXP: (data.xp !== null && data.xp !== undefined) ? data.xp : prev.totalXP,
           accumulatedXP: (data.total_xp !== null && data.total_xp !== undefined) ? data.total_xp : (data.xp || 0)
         }));
+
+        // Buscar missão diária após o sync do perfil
+        fetchDailyMission();
       }
       setSyncDone(true);
 
@@ -123,22 +138,92 @@ const App: React.FC = () => {
     }
   };
 
-  const saveScoreToBackend = async (finalScore: number, finalLevel: number) => {
+  const fetchDailyMission = async () => {
     try {
+      setLoadingMission(true);
       const deviceId = getDeviceId();
-
-      // Agora usamos RPC para chamar a função submit_score que criamos no SQL
-      // Isso é muito mais seguro porque o banco valida o device_id antes de aceitar o score
-      const { error } = await supabase.rpc('submit_score', {
-        device_id_param: deviceId,
-        score_param: finalScore,
-        level_param: finalLevel
+      const { data, error } = await supabase.rpc('get_or_assign_daily_mission', {
+        p_device_id: deviceId
       });
 
       if (error) throw error;
-      console.log('Pontuação salva com segurança!');
+      if (data) setDailyMission(data);
     } catch (err) {
-      console.error('Erro ao salvar pontuação (Segurança):', err);
+      console.error('Erro ao buscar missão:', err);
+    } finally {
+      setLoadingMission(false);
+    }
+  };
+
+  const updateMissionProgress = async () => {
+    if (!dailyMission || dailyMission.is_completed) return;
+
+    let valueToAdd = 0;
+    switch (dailyMission.goal_type) {
+      case 'bemol_count': valueToAdd = missionProgress.bemol; break;
+      case 'sustenido_count': valueToAdd = missionProgress.sustenido; break;
+      case 'minor_count': valueToAdd = missionProgress.minor; break;
+      case 'max_combo': valueToAdd = missionProgress.maxCombo; break;
+      case 'session_xp': valueToAdd = sessionXP; break;
+      case 'perfect_sequence': valueToAdd = missionProgress.perfectCount; break;
+      case 'games_played': valueToAdd = 1; break;
+    }
+
+    if (valueToAdd <= 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('player_missions')
+        .update({
+          current_value: dailyMission.goal_type === 'max_combo' || dailyMission.goal_type === 'perfect_sequence' || dailyMission.goal_type === 'session_xp'
+            ? Math.max(dailyMission.current_value, valueToAdd)
+            : dailyMission.current_value + valueToAdd
+        })
+        .eq('id', dailyMission.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Checar se completou
+      if (data && data.current_value >= dailyMission.goal_value && !data.is_completed) {
+        const { data: updated } = await supabase
+          .from('player_missions')
+          .update({ is_completed: true })
+          .eq('id', dailyMission.id)
+          .select()
+          .single();
+        if (updated) setDailyMission(prev => prev ? { ...prev, ...updated } : null);
+      } else if (data) {
+        setDailyMission(prev => prev ? { ...prev, ...data } : null);
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar missão:', err);
+    }
+  };
+
+  const openClef = async () => {
+    if (!dailyMission || !dailyMission.is_completed || dailyMission.reward_claimed) return;
+
+    try {
+      const { data, error } = await supabase.rpc('open_music_clef', {
+        p_mission_id: dailyMission.id
+      });
+
+      if (error) throw error;
+
+      setClefReward(data);
+      setShowClefOpening(true);
+      setDailyMission(prev => prev ? { ...prev, reward_claimed: true } : null);
+
+      // Atualizar saldos localmente
+      if (data.type === 'acorde_coins') {
+        setStats(prev => ({ ...prev, totalXP: prev.totalXP + data.amount }));
+      } else if (data.type === 'patente_xp') {
+        setStats(prev => ({ ...prev, accumulatedXP: prev.accumulatedXP + data.amount }));
+      }
+    } catch (err) {
+      console.error('Erro ao abrir clave:', err);
     }
   };
 
@@ -171,6 +256,15 @@ const App: React.FC = () => {
     setCurrentIndex(0);
     setCurrentOptions(generateOptions(initialPool[0]));
     setGameState(GameState.PLAYING);
+
+    // Resetar progresso da sessão para missões
+    setMissionProgress({
+      bemol: 0,
+      sustenido: 0,
+      minor: 0,
+      perfectCount: 0,
+      maxCombo: 0
+    });
   };
 
   useEffect(() => {
@@ -200,9 +294,12 @@ const App: React.FC = () => {
     setStats(prev => ({
       ...prev,
       highScore: Math.max(prev.highScore, finalScore),
-      totalXP: prev.totalXP + finalXP,
+      // totalXP agora é o saldo de Acorde Coins (permanece o mesmo na partida normal)
       accumulatedXP: (prev.accumulatedXP || 0) + finalXP
     }));
+
+    // Sincronizar progresso da missão
+    await updateMissionProgress();
 
     // Chamada Única e Segura: Agora score e XP são enviados juntos
     // O Banco de Dados vai validar se o XP faz sentido para esse Score
@@ -224,16 +321,30 @@ const App: React.FC = () => {
   const handleAnswer = (selectedNote: NoteName) => {
     const currentChord = chordsPool[currentIndex];
     if (selectedNote === currentChord.note) {
-      setFeedback({ type: 'correct', note: selectedNote });
-      setCombo(prev => prev + 1);
-      const xp = getXPForLevel(currentLevel);
+      const newScore = score + 1;
+      const newCombo = combo + 1;
+      const xpGain = getXPForLevel(currentLevel);
       const bonus = getTimeBonus(currentLevel);
-      setScore(prev => prev + 1);
-      setSessionXP(prev => prev + xp);
+
+      setScore(newScore);
+      setCombo(newCombo);
+      setSessionXP(prev => prev + xpGain);
+      setFeedback({ type: 'correct', note: currentChord.note });
       setTimeLeft(prev => Math.min(prev + bonus, 600));
       setTimeAdded(bonus);
       setTimeout(() => setTimeAdded(null), 1000);
-      if (scoreRef.current > 0 && (scoreRef.current + 1) % 10 === 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
+
+      // Rastrear progresso da missão
+      setMissionProgress(prev => ({
+        ...prev,
+        bemol: currentChord.symbol.includes('b') ? prev.bemol + 1 : prev.bemol,
+        sustenido: currentChord.symbol.includes('#') ? prev.sustenido + 1 : prev.sustenido,
+        minor: currentChord.symbol.includes('m') ? prev.minor + 1 : prev.minor,
+        perfectCount: prev.perfectCount + 1,
+        maxCombo: Math.max(prev.maxCombo, newCombo)
+      }));
+
+      if (newScore > 0 && newScore % 10 === 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
     } else {
       setFeedback({ type: 'wrong', note: currentChord.note });
       setCombo(0);
@@ -290,7 +401,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 3.0.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.2.0</p>
               </div>
             </div>
 
@@ -418,8 +529,11 @@ const App: React.FC = () => {
                             </div>
                             <div className="w-px h-6 bg-white/10" />
                             <div className="flex flex-col">
-                              <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">Saldo</span>
-                              <span className="text-xs font-black text-white tracking-tighter">{(stats.totalXP || 0).toLocaleString()} <span className="text-[6px] opacity-30">XP</span></span>
+                              <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">Saldo Atual</span>
+                              <div className="flex items-center gap-1">
+                                <i className="fa-solid fa-coins text-[8px] text-yellow-500"></i>
+                                <span className="text-xs font-black text-white tracking-tighter">{(stats.totalXP || 0).toLocaleString()} <span className="text-[6px] opacity-30">Coins</span></span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -437,6 +551,60 @@ const App: React.FC = () => {
                           className="h-full bg-orange-500 rounded-full transition-all duration-1000"
                           style={{ width: `${getNextLevelProgress(stats.accumulatedXP || 0)}%` }}
                         />
+                      </div>
+
+                      {/* WIDGET DE MISSÃO DIÁRIA */}
+                      <div className={`w-full rounded-2xl p-4 border transition-all duration-500 overflow-hidden relative ${dailyMission?.is_completed && !dailyMission?.reward_claimed ? 'bg-orange-600/20 border-orange-500/50' : 'bg-white/5 border-white/10'}`}>
+                        {loadingMission ? (
+                          <div className="flex items-center justify-center py-2">
+                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                          </div>
+                        ) : dailyMission ? (
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">Missão Diária</span>
+                                {dailyMission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Completa!</span>}
+                              </div>
+                              <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{dailyMission.title}</h4>
+                              <p className="text-[8px] text-white/40 font-bold leading-tight">{dailyMission.description}</p>
+
+                              <div className="mt-3 w-full h-1.5 bg-white/5 rounded-full overflow-hidden flex items-center">
+                                <div
+                                  className={`h-full transition-all duration-1000 ${dailyMission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
+                                  style={{ width: `${Math.min(100, (dailyMission.current_value / dailyMission.goal_value) * 100)}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between mt-1">
+                                <span className="text-[7px] font-black text-white/30 uppercase tracking-widest">{dailyMission.is_completed ? 'Concluído' : 'Progresso'}</span>
+                                <span className="text-[7px] font-black text-white uppercase">{dailyMission.current_value} / {dailyMission.goal_value}</span>
+                              </div>
+                            </div>
+
+                            {dailyMission.is_completed && !dailyMission.reward_claimed ? (
+                              <button
+                                onClick={openClef}
+                                className="h-full px-4 bg-orange-500 hover:bg-orange-400 text-white font-black rounded-xl text-[9px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-lg shadow-orange-500/20"
+                              >
+                                Abrir Clave
+                              </button>
+                            ) : dailyMission.reward_claimed ? (
+                              <div className="flex flex-col items-center opacity-30">
+                                <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
+                                <span className="text-[6px] font-black uppercase mt-1">Resgatado</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center opacity-20">
+                                <i className={`fa-solid fa-clef text-2xl text-white`}></i>
+                                <span className="text-[6px] font-black uppercase mt-1">Ganha Clave {dailyMission.reward_rarity}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-2">
+                            <p className="text-[8px] text-white/20 font-black uppercase">Nenhuma missão hoje</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -532,6 +700,18 @@ const App: React.FC = () => {
             accumulatedXP={stats.accumulatedXP || 0}
             selectedCardId={stats.selectedCardId}
             onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
+          />
+        )
+      }
+
+      {
+        showClefOpening && clefReward && (
+          <ClefOpeningModal
+            reward={clefReward}
+            onClose={() => {
+              setShowClefOpening(false);
+              setClefReward(null);
+            }}
           />
         )
       }
