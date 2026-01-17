@@ -2,17 +2,17 @@
 import { Card } from '../types';
 
 export const CARDS: Card[] = [
-    // COMUM - 5,000 XP (Artes Únicas Liberadas)
-    { id: 'c1', name: 'Blue Rhythm', rarity: 'comum', price: 0, image: 'url(/assets/cards/c1.png)' },
-    { id: 'c2', name: 'Emerald Deck', rarity: 'comum', price: 0, image: 'url(/assets/cards/c2.png)' },
-    { id: 'c3', name: 'Slate Echo', rarity: 'comum', price: 0, image: 'url(/assets/cards/c3.png)' },
-    { id: 'c4', name: 'Teal Pulse', rarity: 'comum', price: 0, image: 'url(/assets/cards/c4.png)' },
+    // COMUM - 5,000 XP (Artes Pixel Únicas Liberadas)
+    { id: 'c1', name: 'Vintage Acoustic', rarity: 'comum', price: 0, image: 'url(/assets/cards/c1.png)' },
+    { id: 'c2', name: 'Mystic Flute', rarity: 'comum', price: 0, image: 'url(/assets/cards/c2.png)' },
+    { id: 'c3', name: 'Festive Tambourine', rarity: 'comum', price: 0, image: 'url(/assets/cards/c3.png)' },
+    { id: 'c4', name: 'Space Triangle', rarity: 'comum', price: 0, image: 'url(/assets/cards/c4.png)' },
     { id: 'c5', name: 'Indigo Beat', rarity: 'comum', price: 0, image: 'url(/assets/cards/common.png)' },
     { id: 'c6', name: 'Carbon Note', rarity: 'comum', price: 0, image: 'url(/assets/cards/common.png)' },
 
-    // RARO - 10,000 XP
-    { id: 'r1', name: 'Neon Purple', rarity: 'raro', price: 0, image: 'url(/assets/cards/rare.png)' },
-    { id: 'r2', name: 'Electric Pink', rarity: 'raro', price: 0, image: 'url(/assets/cards/rare.png)' },
+    // RARO - 10,000 XP (Artes Pixel Únicas Liberadas)
+    { id: 'r1', name: 'Thunder Axe', rarity: 'raro', price: 0, image: 'url(/assets/cards/r1.png)' },
+    { id: 'r2', name: 'Cyber Bass', rarity: 'raro', price: 0, image: 'url(/assets/cards/r2.png)' },
     { id: 'r3', name: 'Cyber Cyan', rarity: 'raro', price: 0, image: 'url(/assets/cards/rare.png)' },
     { id: 'r4', name: 'Vulcan Flare', rarity: 'raro', price: 0, image: 'url(/assets/cards/rare.png)' },
     { id: 'r5', name: 'Acid Green', rarity: 'raro', price: 0, image: 'url(/assets/cards/rare.png)' },

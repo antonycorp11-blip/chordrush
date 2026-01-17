@@ -238,7 +238,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.3.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 2.4.0</p>
               </div>
             </div>
 
@@ -266,14 +266,14 @@ const App: React.FC = () => {
 
               <div className="relative w-full group">
                 <button
-                  disabled={true}
-                  className="w-full relative overflow-hidden bg-white/5 border-2 border-white/10 text-white/20 font-black p-5 rounded-2xl text-xl transition-all flex items-center justify-center gap-4 cursor-not-allowed"
+                  onClick={() => setGameState(GameState.STORE)}
+                  className="w-full relative overflow-hidden bg-white/5 border-2 border-white/20 text-white font-black p-5 rounded-2xl text-xl transition-all flex items-center justify-center gap-4 hover:bg-white/10 active:scale-95"
                 >
-                  <i className="fa-solid fa-cart-shopping text-2xl"></i>
+                  <i className="fa-solid fa-cart-shopping text-2xl text-orange-500"></i>
                   LOJA DE CARDS
                 </button>
-                <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12 z-20 animate-bounce">
-                  NOVIDADES EM BREVE
+                <div className="absolute -top-2 -right-2 bg-green-500 text-white text-[8px] font-black px-2 py-1 rounded-lg shadow-lg rotate-12 z-20 animate-pulse">
+                  LOJA ABERTA!
                 </div>
               </div>
 
