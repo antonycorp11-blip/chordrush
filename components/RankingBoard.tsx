@@ -31,22 +31,27 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         }
     };
 
+    // Fonte Premium Limpa (Outfit) para evitar que o nome fique feio ou cortado
     const getNameFontStyle = (cardId?: string) => {
-        if (!cardId) return 'font-black text-lg';
+        const base = "font-black tracking-tight leading-tight";
+        if (!cardId) return `${base} text-white`;
+
         const card = CARDS.find(c => c.id === cardId);
-        if (!card) return 'font-black text-lg';
+        if (!card) return `${base} text-white`;
+
         switch (card.rarity) {
-            case 'raro': return 'font-["Press_Start_2P"] text-[10px] tracking-normal uppercase leading-relaxed';
-            case 'épico': return 'font-["Bangers"] text-2xl tracking-widest uppercase';
-            case 'lendário': return 'font-["Bangers"] text-3xl tracking-[0.05em] text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]';
-            default: return 'font-black text-lg';
+            case 'lendário': return `${base} text-yellow-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]`;
+            case 'épico': return `${base} text-orange-500`;
+            case 'raro': return `${base} text-cyan-400`;
+            default: return `${base} text-white`;
         }
     };
 
     return (
         <div className="w-full h-full flex flex-col bg-[#050505] overflow-hidden">
+            {/* Header */}
             <div className="p-6 pb-2 flex items-center justify-between z-10">
-                <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white">
+                <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white shadow-lg">
                     <i className="fa-solid fa-chevron-left text-xl"></i>
                 </button>
                 <div className="flex flex-col items-end text-right">
@@ -72,11 +77,16 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 key={index}
                                 className={`
                                     relative flex items-center justify-between p-6 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
-                                    ${isMe ? 'scale-[1.02] z-10' : 'scale-100'}
-                                    ${card ? 'border-white/30' : isMe ? 'bg-orange-500/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.2)]' : 'bg-white/5 border-white/10'}
+                                    ${isMe ? 'scale-[1.02] z-20 ring-4 ring-orange-500/20' : 'scale-100'}
+                                    ${card ? 'border-white/20' : isMe ? 'bg-orange-600/20 border-orange-500/50' : 'bg-white/5 border-white/10'}
                                 `}
-                                style={card ? { background: `${card.image} center/cover no-repeat` } : {}}
+                                style={card ? {
+                                    backgroundImage: `${card.image}`,
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center'
+                                } : {}}
                             >
+                                {/* Overlay Escuro para Legibilidade Máxima */}
                                 {card && <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px] pointer-events-none"></div>}
 
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
@@ -84,22 +94,23 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         {isTop3 ? <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i> : <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        {/* REMOVIDO TRUNCATE PARA O NOME APARECER TODO */}
-                                        <span className={`text-white leading-tight break-words pr-2 ${getNameFontStyle(entry.selected_card_id)}`}>
+                                        <span className={`text-xl break-words pr-2 ${getNameFontStyle(entry.selected_card_id)}`}>
                                             {entry.name}
                                         </span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
-                                            {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase">Você</span>}
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
+                                            {isMe && <span className="text-[9px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black uppercase tracking-tighter">Você</span>}
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="text-right relative z-10 flex-shrink-0">
-                                    <div className="text-2xl font-black text-white italic tracking-tighter leading-none"> {entry.score.toLocaleString()} </div>
-                                    <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Pontos</span>
+                                    <div className="text-3xl font-black text-white italic tracking-tighter leading-none"> {entry.score.toLocaleString()} </div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Pontos</span>
                                 </div>
-                                {isMe && <div className="absolute inset-0 border-2 border-orange-500/40 rounded-[30px] animate-pulse pointer-events-none"></div>}
+
+                                {/* Pulse Effect for Current Player */}
+                                {isMe && <div className="absolute inset-0 border-2 border-orange-500/30 rounded-[30px] animate-pulse pointer-events-none"></div>}
                             </div>
                         );
                     })}

@@ -264,33 +264,33 @@ const App: React.FC = () => {
               </button>
             </div>
 
-            {/* Adjusted Player Card for Menu - Shows Equipped Card as Request */}
+            {/* BOX DE JOGADOR - REFLETE O CARD EQUIPADO */}
             <div
-              className={`w-full flex justify-between items-center rounded-3xl p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500
-                    ${selectedEffectCard ? 'border-white/20' : 'bg-black/40 border-white/10'}
+              className={`w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500
+                    ${selectedEffectCard ? 'border-white/30' : 'bg-black/40 border-white/10'}
                 `}
-              style={selectedEffectCard ? { background: selectedEffectCard.image } : {}}
+              style={selectedEffectCard ? {
+                backgroundImage: `${selectedEffectCard.image}`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : {}}
             >
-              {selectedEffectCard && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>}
+              {selectedEffectCard && <div className="absolute inset-0 bg-black/40 backdrop-blur-[0.5px]"></div>}
 
-              <div className="flex flex-col relative z-10">
-                <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Jogador</h3>
-                <span className={`font-black text-2xl text-white tracking-tight ${selectedEffectCard?.rarity === 'lendário' ? 'text-yellow-400' : ''}`}>
+              <div className="flex flex-col relative z-10 min-w-0 flex-1">
+                <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
+                <span className={`font-black text-2xl text-white tracking-tight break-words pr-2 ${selectedEffectCard?.rarity === 'lendário' ? 'text-yellow-400' : ''}`}>
                   {stats.playerName || '---'}
                 </span>
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Recorde: {stats.highScore} pts</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Rec: {stats.highScore}</span>
               </div>
-              <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10">
+              <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
                 <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>
                 <div className="flex items-center gap-2">
                   <i className="fa-solid fa-bolt text-orange-500 text-sm"></i>
                   <span className="text-3xl font-black text-white tabular-nums">{stats.totalXP.toLocaleString()}</span>
                 </div>
               </div>
-
-              {selectedEffectCard?.rarity === 'lendário' && (
-                <div className="absolute top-0 right-0 p-2 text-[8px] font-black text-yellow-400 opacity-50 uppercase tracking-widest animate-pulse">Lendário</div>
-              )}
             </div>
           </div>
         </div>
@@ -344,7 +344,7 @@ const App: React.FC = () => {
 
       {/* GAME OVER SCREEN */}
       {gameState === GameState.GAMEOVER && (
-        <div className="w-full h-full max-h-screen flex flex-col items-center justify-between p-6 bg-neutral-900 pop-in overflow-hidden text-center pt-8 pb-8">
+        <div className="w-full h-full max-h-screen flex flex-col items-center justify-between p-6 bg-[#0a0a0a] pop-in overflow-hidden text-center pt-8 pb-8">
           <div className="w-full">
             <div className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Sessão Finalizada</div>
             <h2 className="text-4xl font-black italic tracking-tighter">FIM DE <span className="text-orange-500">JOGO</span></h2>
