@@ -15,16 +15,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     React.useEffect(() => {
         const fetchRanking = async () => {
-            const { data, error } = await supabase
-                .from('weekly_ranking')
-                .select('*');
-
-            if (data) {
-                setRanking(data);
-            }
+            const { data } = await supabase.from('weekly_ranking').select('*');
+            if (data) setRanking(data);
             setLoading(false);
         };
-
         fetchRanking();
     }, []);
 
@@ -41,7 +35,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         if (!cardId) return 'font-black';
         const card = CARDS.find(c => c.id === cardId);
         if (!card) return 'font-black';
-
         switch (card.rarity) {
             case 'raro': return 'font-["Press_Start_2P"] text-[10px] tracking-normal uppercase';
             case 'épico': return 'font-["Bangers"] text-2xl tracking-widest uppercase';
@@ -51,19 +44,13 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     };
 
     return (
-        <div className="w-full h-full flex flex-col bg-[#0a0a0a] overflow-hidden">
-            {/* Header */}
-            <div className="p-6 pb-2 flex items-center justify-between">
-                <button
-                    onClick={onBack}
-                    className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white"
-                >
+        <div className="w-full h-full flex flex-col bg-[#050505] overflow-hidden">
+            <div className="p-6 pb-2 flex items-center justify-between z-10">
+                <button onClick={onBack} className="w-12 h-12 flex items-center justify-center bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 hover:bg-white/15 active:scale-95 transition-all text-white">
                     <i className="fa-solid fa-chevron-left text-xl"></i>
                 </button>
                 <div className="flex flex-col items-end">
-                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">
-                        RANKING <span className="text-orange-500">GLOBAL</span>
-                    </h2>
+                    <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
                     <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">Status da Temporada</span>
                 </div>
             </div>
@@ -74,7 +61,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     <span className="text-white/20 font-black uppercase tracking-widest text-[9px]">Calculando Posições...</span>
                 </div>
             ) : (
-                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-3 no-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-4 no-scrollbar">
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
                         const card = CARDS.find(c => c.id === entry.selected_card_id);
@@ -84,36 +71,20 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             <div
                                 key={index}
                                 className={`
-                                    relative flex items-center justify-between p-5 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
+                                    relative flex items-center justify-between p-6 rounded-[32px] border-2 transition-all duration-500 overflow-hidden
                                     ${isMe ? 'scale-[1.02] z-10' : 'scale-100'}
-                                    ${card
-                                        ? 'border-white/20'
-                                        : isMe
-                                            ? 'bg-orange-500/20 border-orange-500/50'
-                                            : 'bg-white/5 border-white/5'
-                                    }
+                                    ${card ? 'border-white/20' : isMe ? 'bg-orange-500/20 border-orange-500/50' : 'bg-white/5 border-white/10'}
                                 `}
-                                style={card ? {
-                                    backgroundImage: `url(${card.image})`,
-                                    backgroundSize: 'cover',
-                                    backgroundPosition: 'center'
-                                } : {}}
+                                style={card ? { background: card.image } : {}}
                             >
-                                {/* Overlay para legibilidade */}
                                 {card && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] pointer-events-none"></div>}
 
                                 <div className="flex items-center gap-4 relative z-10">
                                     <div className="w-10 flex justify-center">
-                                        {isTop3 ? (
-                                            <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i>
-                                        ) : (
-                                            <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>
-                                        )}
+                                        {isTop3 ? <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i> : <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className={`text-white truncate max-w-[160px] leading-tight ${getNameFontStyle(entry.selected_card_id)}`}>
-                                            {entry.name}
-                                        </span>
+                                        <span className={`text-white truncate max-w-[160px] leading-tight ${getNameFontStyle(entry.selected_card_id)}`}> {entry.name} </span>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
                                             {isMe && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-black uppercase">Você</span>}
@@ -122,14 +93,10 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                 </div>
 
                                 <div className="text-right relative z-10">
-                                    <div className="text-2xl font-black text-white italic tracking-tighter leading-none">
-                                        {entry.score.toLocaleString()}
-                                    </div>
+                                    <div className="text-2xl font-black text-white italic tracking-tighter leading-none"> {entry.score.toLocaleString()} </div>
                                     <span className="text-[8px] font-black uppercase tracking-widest text-white/30">Pontos</span>
                                 </div>
-
-                                {/* Glow effect for ME */}
-                                {isMe && !card && <div className="absolute inset-0 border-2 border-orange-500/50 rounded-[30px] animate-pulse"></div>}
+                                {isMe && <div className="absolute inset-0 border-2 border-orange-500/30 rounded-[30px] animate-pulse pointer-events-none"></div>}
                             </div>
                         );
                     })}
