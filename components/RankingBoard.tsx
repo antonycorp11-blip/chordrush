@@ -15,10 +15,46 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const deviceId = getDeviceId();
 
     const fetchRanking = async () => {
-        const { data } = await supabase.from('weekly_ranking').select('*');
-        if (data) {
-            // Garante que ordenamos pelo score mas mantemos o XP real
-            setRanking(data.sort((a, b) => b.score - a.score));
+        setLoading(true);
+        // Primeiro, pegamos todos os jogadores e seus XPs
+        const { data: playersData } = await supabase
+            .from('players')
+            .select('device_id, name, xp, id, selected_card_id');
+
+        // Depois pegamos o melhor score de cada um
+        const { data: scoresData } = await supabase
+            .from('scores')
+            .select('player_id, score, created_at, level')
+            .order('score', { ascending: false });
+
+        if (playersData && scoresData) {
+            // Criar mapa do melhor score por player
+            const bestScores = new Map();
+            scoresData.forEach(s => {
+                if (!bestScores.has(s.player_id)) {
+                    bestScores.set(s.player_id, s);
+                }
+            });
+
+            const formatted = playersData
+                .map(p => {
+                    const best = bestScores.get(p.id);
+                    if (!best) return null;
+                    return {
+                        device_id: p.device_id,
+                        name: p.name,
+                        xp: p.xp || 0,
+                        selected_card_id: p.selected_card_id,
+                        score: best.score,
+                        created_at: best.created_at,
+                        level: best.level
+                    };
+                })
+                .filter(Boolean)
+                .sort((a, b) => (b?.score || 0) - (a?.score || 0))
+                .slice(0, 50);
+
+            setRanking(formatted as any);
         }
         setLoading(false);
     };
