@@ -224,31 +224,36 @@ const App: React.FC = () => {
         <div className="w-full h-full max-h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative bg-[#0a0a0a]">
           <div className="w-full max-w-sm flex flex-col items-center gap-6 z-10">
             <div className="text-center">
-              <div className="h-20 mb-4 flex items-center justify-center">
+              <div className="h-10 mb-2 flex items-center justify-center opacity-60">
                 <img
                   src="school_logo.png"
                   alt="Escola Logo"
-                  className="max-h-full w-auto drop-shadow-xl"
+                  className="max-h-full w-auto grayscale brightness-200"
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                 />
               </div>
-              <h1 className="text-6xl sm:text-8xl font-black tracking-tighter italic leading-none block">
+              <h1 className="text-5xl sm:text-7xl font-black tracking-tighter italic leading-none block">
                 CHORD<span className="text-orange-500">RUSH</span>
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.3.1</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.4.0</p>
               </div>
             </div>
 
             <div className="w-full space-y-4">
-              <input
-                type="text"
-                placeholder="Seu Nome"
-                value={stats.playerName}
-                onChange={(e) => handleNameChange(e.target.value)}
-                className="w-full bg-white/5 border-2 border-white/5 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
-              />
+              {!stats.playerName && (
+                <div className="space-y-2">
+                  <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">Identifique-se para Jogar</p>
+                  <input
+                    type="text"
+                    placeholder="DIGITE SEU NOME"
+                    value={stats.playerName}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-orange-500 transition-all placeholder:text-white/10"
+                  />
+                </div>
+              )}
 
               <button
                 onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
