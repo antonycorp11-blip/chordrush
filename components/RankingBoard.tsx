@@ -173,20 +173,26 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">Prêmio da Semana</span>
                                 </div>
-                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">CURSO DE <span className="text-orange-500">GUITARRA</span></h3>
+                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none">BARRA DE <span className="text-orange-500">CACAU SHOW</span></h3>
                                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2">1º LUGAR NO RANKING</p>
                             </div>
                             <div className="flex flex-col items-end">
-                                <div className="bg-white/5 border border-white/10 px-3 py-2 rounded-2xl flex flex-col items-center min-w-[70px]">
-                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-0.5">Termina em</span>
+                                <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-2xl flex flex-col items-center min-w-[70px]">
+                                    <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-0.5">Prazo Até</span>
                                     <span className="text-sm font-black text-white tabular-nums tracking-tight">
                                         {(() => {
                                             const d = new Date(now);
                                             const daysToAdd = (7 - d.getDay()) % 7;
-                                            const nextSunday = new Date(now);
-                                            nextSunday.setDate(d.getDate() + daysToAdd);
-                                            nextSunday.setHours(23, 59, 59, 999);
-                                            const diff = nextSunday.getTime() - now;
+                                            const deadline = new Date(now);
+                                            deadline.setDate(d.getDate() + daysToAdd);
+                                            deadline.setHours(12, 0, 0, 0); // DOMINGO 12H
+
+                                            // Se já passou das 12h de domingo hoje, mostra o próximo domingo
+                                            if (now > deadline.getTime()) {
+                                                deadline.setDate(deadline.getDate() + 7);
+                                            }
+
+                                            const diff = deadline.getTime() - now;
                                             const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                                             const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                                             const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
