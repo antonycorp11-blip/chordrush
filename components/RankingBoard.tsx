@@ -3,6 +3,7 @@ import React from 'react';
 import { supabase, getDeviceId } from '../utils/supabaseClient';
 import { RankingEntry } from '../types';
 import { CARDS } from '../constants/cards';
+import { getPlayerTitle } from '../utils/titles';
 
 interface RankingBoardProps {
     onBack: () => void;
@@ -11,25 +12,34 @@ interface RankingBoardProps {
 export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
     const [ranking, setRanking] = React.useState<RankingEntry[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [now, setNow] = React.useState(new Date());
     const deviceId = getDeviceId();
 
+    const fetchRanking = async () => {
+        const { data } = await supabase.from('weekly_ranking').select('*');
+        if (data) setRanking(data);
+        setLoading(false);
+    };
+
     React.useEffect(() => {
-        const fetchRanking = async () => {
-            const { data } = await supabase.from('weekly_ranking').select('*');
-            if (data) setRanking(data);
-            setLoading(false);
-        };
         fetchRanking();
+
+        // Update "now" every minute to refresh time indicators
+        const timer = setInterval(() => setNow(new Date()), 60000);
 
         // Realtime updates
         const channel = supabase
             .channel('ranking_updates')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scores' }, () => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
+                fetchRanking();
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, () => {
                 fetchRanking();
             })
             .subscribe();
 
         return () => {
+            clearInterval(timer);
             supabase.removeChannel(channel);
         };
     }, []);
@@ -45,16 +55,15 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
 
     const getTimeAgo = (dateString: string) => {
         if (!dateString) return '---';
-        const now = new Date();
         const past = new Date(dateString);
         const diffInMs = now.getTime() - past.getTime();
         const diffInMins = Math.floor(diffInMs / (1000 * 60));
 
         if (diffInMins < 1) return 'Agora';
         if (diffInMins < 60) return `${diffInMins}m`;
-        const hours = Math.floor(diffInMins / 60);
-        if (hours < 24) return `${hours}h`;
-        return `${Math.floor(hours / 24)}d`;
+        const diffInHours = Math.floor(diffInMins / 60);
+        if (diffInHours < 24) return `${diffInHours}h`;
+        return `${Math.floor(diffInHours / 24)}d`;
     };
 
     return (
@@ -80,6 +89,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
                         const isTop3 = index < 3;
+                        const playerTitle = getPlayerTitle(entry.xp || 0);
 
                         return (
                             <div
@@ -98,14 +108,21 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                         )}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
+                                        {/* Título de Nível com Moldura */}
+                                        <div className={`self-start px-2 py-0.5 rounded border mb-1 ${playerTitle.border}`}>
+                                            <span className={`text-[8px] uppercase font-black tracking-widest ${playerTitle.style}`}>
+                                                {playerTitle.title}
+                                            </span>
+                                        </div>
+
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xl font-black text-white tracking-tight break-words line-clamp-1">
+                                            <span className="text-xl font-black text-white tracking-tight break-words line-clamp-1 uppercase">
                                                 {entry.name}
                                             </span>
                                             {isMe && <span className="text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded flex-shrink-0 font-black uppercase tracking-tighter shadow-sm">VOCÊ</span>}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Fase {entry.level}</span>
                                             <span className="text-white/20">•</span>
                                             <span className="text-[10px] font-bold text-white/30 truncate">
                                                 {getTimeAgo(entry.created_at)}

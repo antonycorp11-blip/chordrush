@@ -14,6 +14,7 @@ import { supabase, getDeviceId } from './utils/supabaseClient';
 import { RankingBoard } from './components/RankingBoard';
 import { CardStore } from './components/CardStore';
 import { CARDS } from './constants/cards';
+import { getPlayerTitle } from './utils/titles';
 
 const App: React.FC = () => {
   const [stats, setStats] = useState<GameStats>(() => {
@@ -237,7 +238,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.5.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 1.6.0</p>
               </div>
             </div>
 
@@ -286,24 +287,34 @@ const App: React.FC = () => {
             </div>
 
             {/* BOX DE JOGADOR - LIMPO SEM SPOILERS */}
-            <div
-              className="w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 bg-neutral-900/80 border-white/10"
-            >
-              <div className="flex flex-col relative z-10 min-w-0 flex-1">
-                <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
-                <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1">
-                  {stats.playerName || '---'}
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/50 lowercase">Recorde: {stats.highScore} pts</span>
-              </div>
-              <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
-                <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>
-                <div className="flex items-center gap-2">
-                  <i className="fa-solid fa-bolt text-orange-500 text-sm"></i>
-                  <span className="text-3xl font-black text-white tabular-nums">{stats.totalXP.toLocaleString()}</span>
+            {(() => {
+              const title = getPlayerTitle(stats.totalXP);
+              return (
+                <div
+                  className="w-full flex justify-between items-center rounded-[32px] p-6 border-2 shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 bg-neutral-900/80 border-white/10"
+                >
+                  <div className="flex flex-col relative z-10 min-w-0 flex-1">
+                    <div className={`self-start px-2 py-0.5 rounded border mb-1 ${title.border}`}>
+                      <span className={`text-[8px] uppercase font-black tracking-widest ${title.style}`}>
+                        {title.title}
+                      </span>
+                    </div>
+                    <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Status do Perfil</h3>
+                    <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase">
+                      {stats.playerName || '---'}
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/50 lowercase">Recorde: {stats.highScore} pts</span>
+                  </div>
+                  <div className="flex flex-col items-end pl-4 border-l border-white/10 relative z-10 flex-shrink-0">
+                    <h3 className="text-white/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1">XP Saldo</h3>
+                    <div className="flex items-center gap-2">
+                      <i className="fa-solid fa-bolt text-orange-500 text-sm"></i>
+                      <span className="text-3xl font-black text-white tabular-nums">{stats.totalXP.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         </div>
       )}

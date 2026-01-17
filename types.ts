@@ -33,6 +33,8 @@ export interface RankingEntry {
   level: number;
   device_id: string;
   selected_card_id?: string;
+  xp: number;
+  created_at: string;
 }
 
 export type Rarity = 'comum' | 'raro' | 'épico' | 'lendário';
