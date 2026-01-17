@@ -412,7 +412,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.3.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 6.4.0</p>
               </div>
             </div>
 
@@ -581,8 +581,8 @@ const App: React.FC = () => {
                               <div key={mission.id} className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex items-center justify-between gap-4 ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'}`}>
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className={`text-[7px] font-black uppercase tracking-widest ${mission.reward_rarity === 'lendário' ? 'text-yellow-400' : mission.reward_rarity === 'épico' ? 'text-purple-400' : 'text-orange-500'}`}>
-                                      {mission.reward_rarity}
+                                    <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
+                                      Recompensa Sorteada
                                     </span>
                                     {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
                                   </div>
@@ -614,7 +614,7 @@ const App: React.FC = () => {
                                   </div>
                                 ) : (
                                   <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
-                                    <img src={`/assets/clefs/clef_${mission.reward_rarity}.png`} className="w-full h-full object-contain" />
+                                    <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
                                   </div>
                                 )}
                               </div>
@@ -645,7 +645,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex justify-between items-center mb-2 relative">
               {/* Overlay de Missões (Mini) */}
-              <div className="absolute top-20 left-0 flex flex-col gap-1 w-32 pointer-events-none z-10">
+              <div className="absolute top-20 left-0 flex flex-col gap-2 w-44 pointer-events-none z-10">
                 {dailyMissions.filter(m => !m.is_completed).slice(0, 3).map(m => {
                   let currentProgress = 0;
                   switch (m.goal_type) {
@@ -657,16 +657,16 @@ const App: React.FC = () => {
                     case 'perfect_sequence': currentProgress = missionProgress.perfectCount; break;
                   }
                   return (
-                    <div key={m.id} className="bg-black/60 backdrop-blur-md p-2 rounded-lg border border-white/5 min-w-[100px]">
-                      <div className="text-[5px] font-black text-orange-500 uppercase tracking-widest truncate">{m.title}</div>
-                      <div className="flex items-center justify-between mt-1">
-                        <div className="flex-1 h-[2px] bg-white/10 rounded-full overflow-hidden">
+                    <div key={m.id} className="bg-black/80 backdrop-blur-xl p-3 rounded-xl border border-white/10 shadow-2xl animate-in slide-in-from-left duration-500">
+                      <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-tight mb-1">{m.title}</div>
+                      <div className="flex items-center justify-between mt-1 gap-3">
+                        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
                           <div
-                            className="h-full bg-orange-500 transition-all duration-500"
+                            className="h-full bg-orange-500 transition-all duration-500 rounded-full"
                             style={{ width: `${Math.min(100, (currentProgress / m.goal_value) * 100)}%` }}
                           />
                         </div>
-                        <span className="text-[5px] font-black text-white ml-2">{currentProgress}/{m.goal_value}</span>
+                        <span className="text-[10px] font-black text-white tabular-nums">{currentProgress}/{m.goal_value}</span>
                       </div>
                     </div>
                   );
@@ -720,19 +720,30 @@ const App: React.FC = () => {
             </div>
             <div className="w-full max-w-sm space-y-4">
               <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-center flex flex-col items-center gap-1 shadow-inner">
-                <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Ranking Final</span>
-                <span className="text-7xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.4)]">{score.toLocaleString()}</span>
-                <div className="px-4 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-[10px] font-black uppercase tracking-widest mt-2 border border-yellow-500/30"> {score >= stats.highScore ? '🔥 NOVO RECORDE 🔥' : `RECORDE: ${stats.highScore.toLocaleString()}`} </div>
+                <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Sua Pontuação</span>
+                <span className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.4)] mb-4">{score.toLocaleString()}</span>
+
+                <div className="grid grid-cols-2 gap-3 w-full">
+                  <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5 flex flex-col items-center">
+                    <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Patente XP</span>
+                    <span className="text-xl font-black text-blue-400">+{sessionXP}</span>
+                  </div>
+                  <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5 flex flex-col items-center">
+                    <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Coins Ganhos</span>
+                    <span className="text-xl font-black text-yellow-500">+{Math.floor(sessionXP * 0.1)}</span>
+                  </div>
+                </div>
+                <div className="w-full mt-3 bg-black/30 rounded-2xl p-4 text-center border border-white/5">
+                  <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Nível Final</span>
+                  <span className="text-xl font-black text-orange-400">LEVEL {currentLevel}</span>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"> <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">XP Ganho</span> <span className="text-xl font-black text-green-400">+{sessionXP}</span> </div>
-                <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5"> <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Nível Final</span> <span className="text-xl font-black text-orange-400">{currentLevel}</span> </div>
+
+              <div className="w-full space-y-3">
+                <button onClick={() => startNewGame(mode)} className="w-full bg-orange-500 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700 uppercase"> Jogar Novamente </button>
+                <button onClick={() => setGameState(GameState.MENU)} className="w-full bg-white/10 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all border-b-4 border-white/5 uppercase"> Voltar ao Menu </button>
+                <button onClick={() => setGameState(GameState.RANKING)} className="w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2"> <i className="fa-solid fa-trophy"></i> Ranking Global </button>
               </div>
-            </div>
-            <div className="w-full max-w-sm space-y-3">
-              <button onClick={() => startNewGame(mode)} className="w-full bg-orange-500 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700 uppercase"> Jogar Novamente </button>
-              <button onClick={() => setGameState(GameState.MENU)} className="w-full bg-white/10 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all border-b-4 border-white/5 uppercase"> Voltar ao Menu </button>
-              <button onClick={() => setGameState(GameState.RANKING)} className="w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2"> <i className="fa-solid fa-trophy"></i> Ranking Global </button>
             </div>
           </div>
         )
