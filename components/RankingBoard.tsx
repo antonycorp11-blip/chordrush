@@ -171,7 +171,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 </button>
                 <div className="flex flex-col items-end text-right">
                     <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GLOBAL</span></h2>
-                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V3.2.0 • Perfil Ativo</span>
+                    <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">V4.0.0 • Dossiê Ativo</span>
                 </div>
             </div>
 
@@ -238,11 +238,22 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 {selectedCard ? (
                                     <>
+                                        {/* CARD BACKGROUND - MAIS VIVIDO */}
                                         <div
-                                            className="absolute inset-0 bg-cover bg-center opacity-40 grayscale-[0.2]"
+                                            className="absolute inset-0 bg-cover bg-center opacity-70 transition-opacity duration-500"
                                             style={{ backgroundImage: selectedCard.image }}
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-black" />
+                                        {/* GRADIENTE MAIS SUAVE PARA NÃO ESCURECER O MEIO */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/20 to-black/90" />
+
+                                        {/* BRILHO LATERAL DE ACORDO COM A RARIDADE */}
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 flex flex-col`}>
+                                            <div className={`flex-1 ${selectedCard.rarity === 'lendário' ? 'bg-yellow-400 shadow-[2px_0_15px_rgba(250,204,21,0.5)]' :
+                                                    selectedCard.rarity === 'épico' ? 'bg-orange-500 shadow-[2px_0_15px_rgba(249,115,22,0.5)]' :
+                                                        selectedCard.rarity === 'raro' ? 'bg-cyan-400 shadow-[2px_0_15px_rgba(34,211,238,0.5)]' :
+                                                            'bg-blue-400'
+                                                }`}></div>
+                                        </div>
                                     </>
                                 ) : (
                                     <div className={`absolute inset-0 ${isMe ? 'bg-neutral-800' : 'bg-neutral-900/60'}`} />
