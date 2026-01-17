@@ -20,6 +20,18 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
             setLoading(false);
         };
         fetchRanking();
+
+        // Realtime updates
+        const channel = supabase
+            .channel('ranking_updates')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'scores' }, () => {
+                fetchRanking();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const getRankingIcon = (index: number) => {
@@ -31,20 +43,18 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         }
     };
 
-    // Fonte Premium Limpa (Outfit) para evitar que o nome fique feio ou cortado
-    const getNameFontStyle = (cardId?: string) => {
-        const base = "font-black tracking-tight leading-tight";
-        if (!cardId) return `${base} text-white`;
+    const getTimeAgo = (dateString: string) => {
+        if (!dateString) return '---';
+        const now = new Date();
+        const past = new Date(dateString);
+        const diffInMs = now.getTime() - past.getTime();
+        const diffInMins = Math.floor(diffInMs / (1000 * 60));
 
-        const card = CARDS.find(c => c.id === cardId);
-        if (!card) return `${base} text-white`;
-
-        switch (card.rarity) {
-            case 'lendário': return `${base} text-yellow-400 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]`;
-            case 'épico': return `${base} text-orange-500`;
-            case 'raro': return `${base} text-cyan-400`;
-            default: return `${base} text-white`;
-        }
+        if (diffInMins < 1) return 'Agora';
+        if (diffInMins < 60) return `${diffInMins}m`;
+        const hours = Math.floor(diffInMins / 60);
+        if (hours < 24) return `${hours}h`;
+        return `${Math.floor(hours / 24)}d`;
     };
 
     return (
@@ -69,7 +79,6 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                 <div className="flex-1 overflow-y-auto px-4 pt-4 pb-10 space-y-4 no-scrollbar">
                     {ranking.map((entry, index) => {
                         const isMe = entry.device_id === deviceId;
-                        const card = CARDS.find(c => c.id === entry.selected_card_id);
                         const isTop3 = index < 3;
 
                         return (
@@ -82,15 +91,25 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                             >
                                 <div className="flex items-center gap-4 relative z-10 flex-1 min-w-0">
                                     <div className="w-10 flex-shrink-0 flex justify-center">
-                                        {isTop3 ? <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i> : <span className="text-white/20 font-black italic text-xl">#{index + 1}</span>}
+                                        {isTop3 ? (
+                                            <i className={`fa-solid fa-crown ${getRankingIcon(index)}`}></i>
+                                        ) : (
+                                            <span className="text-white/40 font-black italic text-xl drop-shadow-sm">#{index + 1}</span>
+                                        )}
                                     </div>
                                     <div className="flex flex-col flex-1 min-w-0">
-                                        <span className="text-xl font-black text-white tracking-tight break-words pr-2">
-                                            {entry.name}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl font-black text-white tracking-tight break-words line-clamp-1">
+                                                {entry.name}
+                                            </span>
+                                            {isMe && <span className="text-[9px] bg-orange-500 text-white px-1.5 py-0.5 rounded flex-shrink-0 font-black uppercase tracking-tighter shadow-sm">VOCÊ</span>}
+                                        </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Nível {entry.level}</span>
-                                            {isMe && <span className="text-[9px] bg-orange-500 text-white px-2 py-0.5 rounded-lg font-black uppercase tracking-tighter shadow-sm">Você</span>}
+                                            <span className="text-white/20">•</span>
+                                            <span className="text-[10px] font-bold text-white/30 truncate">
+                                                {getTimeAgo(entry.created_at)}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
