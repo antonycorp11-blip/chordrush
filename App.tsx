@@ -187,9 +187,11 @@ const App: React.FC = () => {
     isEndingRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+
     const finalScore = scoreRef.current;
     const finalLevel = levelRef.current;
     const finalXP = sessionXPRef.current;
+
     setGameState(GameState.GAMEOVER);
     setStats(prev => ({
       ...prev,
@@ -197,9 +199,22 @@ const App: React.FC = () => {
       totalXP: prev.totalXP + finalXP,
       accumulatedXP: (prev.accumulatedXP || 0) + finalXP
     }));
-    await saveScoreToBackend(finalScore, finalLevel);
+
+    // Chamada Única e Segura: Agora score e XP são enviados juntos
+    // O Banco de Dados vai validar se o XP faz sentido para esse Score
     const deviceId = getDeviceId();
-    await supabase.rpc('increment_player_xp', { device_id_param: deviceId, xp_to_add: finalXP });
+    const { error } = await supabase.rpc('secure_end_game', {
+      device_id_param: deviceId,
+      score_param: finalScore,
+      level_param: finalLevel,
+      xp_param: finalXP
+    });
+
+    if (error) {
+      console.error('Tentativa de manipulação detectada ou erro de rede:', error.message);
+    } else {
+      console.log('Dados salvos com segurança máxima.');
+    }
   };
 
   const handleAnswer = (selectedNote: NoteName) => {
