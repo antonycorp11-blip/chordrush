@@ -116,7 +116,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.5.6';
+      const currentVersion = '7.6.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -126,12 +126,8 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.5.6');
+    localStorage.setItem('chordRush_version', '7.6.0');
     setShowChangelog(false);
-  };
-
-  const handleNameChange = (name: string) => {
-    setStats(prev => ({ ...prev, playerName: name.toUpperCase() }));
   };
 
   const savePlayerProfile = async () => {
@@ -482,7 +478,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.5.6</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.6.0</p>
               </div>
             </div>
 
@@ -760,12 +756,14 @@ const App: React.FC = () => {
       {
         gameState === GameState.PLAYING && (
           <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
-            <div className="flex justify-center pt-12 mb-2">
-              <button onClick={endGame} className="px-4 py-2 bg-black/20 text-red-500 border border-red-500/30 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2">
-                <i className="fa-solid fa-flag-checkered"></i> Encerrar Partida
-              </button>
-            </div>
-            <div className="flex justify-between items-center mb-2 relative">
+            <button
+              onClick={endGame}
+              className="absolute top-6 right-4 z-50 px-3 py-1.5 bg-black/40 text-red-500 border border-red-500/20 rounded-xl text-[7px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2 backdrop-blur-md shadow-lg"
+            >
+              <i className="fa-solid fa-flag-checkered text-[9px]"></i> Encerrar Partida
+            </button>
+
+            <div className="flex justify-between items-center mb-2 relative pt-12">
               {/* Overlay de Missões (Mini) */}
               <div className="absolute top-24 left-0 right-0 flex justify-center gap-2 pointer-events-none z-10 px-4 scale-90 sm:scale-100">
                 {dailyMissions.filter(m => !m.is_completed).slice(0, 2).map(m => {
