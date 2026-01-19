@@ -53,6 +53,8 @@ const App: React.FC = () => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
   const [recoveryPinInput, setRecoveryPinInput] = useState('');
+  const [tempName, setTempName] = useState('');
+  const [showNameModal, setShowNameModal] = useState(false);
   const [dailyMissions, setDailyMissions] = useState<PlayerMission[]>([]);
   const [loadingMission, setLoadingMission] = useState(false);
   const [showClefOpening, setShowClefOpening] = useState(false);
@@ -103,9 +105,10 @@ const App: React.FC = () => {
             accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP,
             recoveryPin: data.recovery_pin
           }));
-
-          // Buscar missões diárias após o sync do perfil
+          if (!data.name) setShowNameModal(true);
           fetchDailyMissions();
+        } else {
+          setShowNameModal(true);
         }
       } catch (error) {
         console.error('Error syncing profile:', error);
@@ -113,7 +116,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.5.0';
+      const currentVersion = '7.5.5';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -123,7 +126,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.5.0');
+    localStorage.setItem('chordRush_version', '7.5.5');
     setShowChangelog(false);
   };
 
@@ -133,16 +136,19 @@ const App: React.FC = () => {
 
   const savePlayerProfile = async () => {
     const deviceId = getDeviceId();
-    const nameToSave = stats.playerName.trim() || `JOGADOR-${deviceId.slice(0, 4)}`;
+    const nameToSave = tempName.trim().toUpperCase() || `JOGADOR-${deviceId.slice(0, 4)}`;
     try {
-      // Usamos RPC para que o Matheus não consiga injetar 'xp: 99999' no meio do comando de nome
       const { error } = await supabase.rpc('update_player_name_secure', {
         device_id_param: deviceId,
         new_name: nameToSave
       });
 
       if (error) throw error;
+
+      setStats(prev => ({ ...prev, playerName: nameToSave }));
       setIsRenaming(false);
+      setShowNameModal(false);
+      setTempName('');
 
       // Re-sincroniza para pegar o PIN gerado se for novo jogador
       const { data: newData } = await supabase
@@ -476,22 +482,22 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.5.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.5.5</p>
               </div>
             </div>
 
             <div className="w-full space-y-4">
-              {((!stats.playerName || stats.playerName.length <= 1 || isRenaming) && syncDone) ? (
+              {((showNameModal || isRenaming) && syncDone) ? (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
                   <div className="space-y-2">
                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">
-                      {isRecovering ? 'Digite seus dados de acesso' : (stats.playerName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?')}
+                      {isRecovering ? 'Digite seus dados de acesso' : (tempName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?')}
                     </p>
                     <input
                       type="text"
                       placeholder="DIGITE SEU NOME"
-                      value={stats.playerName || ''}
-                      onChange={(e) => handleNameChange(e.target.value)}
+                      value={tempName || ''}
+                      onChange={(e) => setTempName(e.target.value.toUpperCase())}
                       className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10"
                     />
                     {isRecovering && (
@@ -509,17 +515,17 @@ const App: React.FC = () => {
 
                   {isRecovering ? (
                     <button
-                      onClick={() => stats.playerName.trim().length >= 2 && recoveryPinInput.length === 4 && recoverAccount(stats.playerName, recoveryPinInput)}
-                      disabled={stats.playerName.trim().length < 2 || recoveryPinInput.length < 4}
-                      className={`w-full relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-[8px] uppercase ${(stats.playerName.trim().length < 2 || recoveryPinInput.length < 4) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-orange-600'}`}
+                      onClick={() => tempName.trim().length >= 2 && recoveryPinInput.length === 4 && recoverAccount(tempName, recoveryPinInput)}
+                      disabled={tempName.trim().length < 2 || recoveryPinInput.length < 4}
+                      className={`w-full relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-[8px] uppercase ${(tempName.trim().length < 2 || recoveryPinInput.length < 4) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-orange-600'}`}
                     >
                       RESGATAR CONTA
                     </button>
                   ) : (
                     <button
-                      onClick={() => stats.playerName.trim().length >= 2 && savePlayerProfile()}
-                      disabled={stats.playerName.trim().length < 2}
-                      className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${stats.playerName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
+                      onClick={() => tempName.trim().length >= 2 && savePlayerProfile()}
+                      disabled={tempName.trim().length < 2}
+                      className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${tempName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
                     >
                       CONFIRMAR NOME
                     </button>
@@ -535,8 +541,8 @@ const App: React.FC = () => {
                     >
                       {isRecovering ? 'Quero criar novo perfil' : 'Já jogo? Resgatar minha conta'}
                     </button>
-                    {isRenaming && (
-                      <button onClick={() => setIsRenaming(false)} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
+                    {(isRenaming || (showNameModal && stats.playerName)) && (
+                      <button onClick={() => { setIsRenaming(false); setShowNameModal(false); setTempName(''); }} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
                     )}
                   </div>
                 </div>
@@ -629,6 +635,7 @@ const App: React.FC = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setTempName(stats.playerName);
                                 setIsRenaming(true);
                               }}
                               className="bg-white/5 hover:bg-white/10 p-2 rounded-xl text-white/40 transition-colors border border-white/5"
@@ -753,12 +760,7 @@ const App: React.FC = () => {
       {
         gameState === GameState.PLAYING && (
           <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
-            <div className="flex justify-end mb-2">
-              <button onClick={endGame} className="px-4 py-2 bg-black/20 text-red-500 border border-red-500/30 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2">
-                <i className="fa-solid fa-flag-checkered"></i> Encerrar
-              </button>
-            </div>
-            <div className="flex justify-between items-center mb-2 relative">
+            <div className="flex justify-between items-center mb-2 relative pt-8">
               {/* Overlay de Missões (Mini) */}
               <div className="absolute top-24 left-0 right-0 flex justify-center gap-2 pointer-events-none z-10 px-4 scale-90 sm:scale-100">
                 {dailyMissions.filter(m => !m.is_completed).slice(0, 2).map(m => {
@@ -821,6 +823,17 @@ const App: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {currentOptions.map((opt, i) => (<NoteButton key={`${currentIndex}-${i}-${opt}`} note={opt} disabled={feedback !== null} onClick={handleAnswer} />))}
+            </div>
+
+            {/* BOTÃO ENCERRAR PARTIDA (ACESSÍVEL) */}
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center z-50 pointer-events-auto">
+              <button
+                onClick={endGame}
+                className="px-8 py-4 bg-red-600/20 text-red-500 border-2 border-red-500/30 rounded-[28px] text-[10px] font-black uppercase tracking-[0.3em] transition-all active:scale-90 flex items-center justify-center gap-3 backdrop-blur-xl shadow-[0_0_30px_rgba(239,68,68,0.15)]"
+              >
+                <i className="fa-solid fa-flag-checkered text-lg"></i>
+                Encerrar Partida
+              </button>
             </div>
           </div>
         )
