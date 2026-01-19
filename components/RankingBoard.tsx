@@ -25,7 +25,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         setLoading(true);
         try {
             const { data: rankingData, error: rError } = await supabase
-                .rpc('get_ranking_v5');
+                .rpc('get_weekly_ranking_v6');
 
             if (rError) throw rError;
 
@@ -123,7 +123,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     <div className="flex flex-col">
                         <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GERAL</span></h2>
                         <span className="text-[7px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">
-                            {lastSync ? `Atualizado: ${lastSync.toLocaleTimeString()}` : 'V7.2.0 • Motor de Diagnóstico V5'}
+                            {lastSync ? `Atualizado: ${lastSync.toLocaleTimeString()}` : 'V7.4.0 • Reset Auto aos Domingos 22h'}
                         </span>
                     </div>
                 </div>
@@ -147,8 +147,8 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 text-left">Prêmio da Semana</span>
                                 </div>
-                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none text-left">BARRA DE <span className="text-orange-500 text-left">CACAU SHOW</span></h3>
-                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2 text-left">1º LUGAR NO RANKING</p>
+                                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-none text-left">ESTÁGIO DE <span className="text-orange-500 text-left">TREINAMENTO</span></h3>
+                                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2 text-left">Aguarde o próximo prêmio...</p>
                             </div>
                             <div className="flex flex-col items-end">
                                 <div className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-2xl flex flex-col items-center min-w-[70px]">
@@ -156,10 +156,12 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                                     <span className="text-sm font-black text-white tabular-nums tracking-tight">
                                         {(() => {
                                             const d = new Date(now);
-                                            const daysToAdd = (7 - d.getDay()) % 7;
                                             const deadline = new Date(now);
-                                            deadline.setDate(d.getDate() + daysToAdd);
-                                            deadline.setHours(12, 0, 0, 0);
+                                            // Calcula próximo Domingo às 22:00
+                                            const day = d.getDay();
+                                            const diffToSunday = day === 0 ? (d.getHours() >= 22 ? 7 : 0) : (7 - day);
+                                            deadline.setDate(d.getDate() + diffToSunday);
+                                            deadline.setHours(22, 0, 0, 0);
 
                                             if (now > deadline.getTime()) {
                                                 deadline.setDate(deadline.getDate() + 7);

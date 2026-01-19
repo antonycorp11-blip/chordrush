@@ -9,8 +9,9 @@
             "purpose": "any maskable"
         }
     ],
-    "start_url": ".",
+    "start_url": "/?pwa=true",
     "display": "standalone",
+    "orientation": "portrait",
     "theme_color": "#0a0a0a",
     "background_color": "#0a0a0a"
 }
