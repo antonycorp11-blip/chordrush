@@ -116,7 +116,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.5.5';
+      const currentVersion = '7.5.6';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -126,7 +126,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.5.5');
+    localStorage.setItem('chordRush_version', '7.5.6');
     setShowChangelog(false);
   };
 
@@ -482,7 +482,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.5.5</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.5.6</p>
               </div>
             </div>
 
@@ -760,7 +760,12 @@ const App: React.FC = () => {
       {
         gameState === GameState.PLAYING && (
           <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
-            <div className="flex justify-between items-center mb-2 relative pt-8">
+            <div className="flex justify-center pt-12 mb-2">
+              <button onClick={endGame} className="px-4 py-2 bg-black/20 text-red-500 border border-red-500/30 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i className="fa-solid fa-flag-checkered"></i> Encerrar Partida
+              </button>
+            </div>
+            <div className="flex justify-between items-center mb-2 relative">
               {/* Overlay de Missões (Mini) */}
               <div className="absolute top-24 left-0 right-0 flex justify-center gap-2 pointer-events-none z-10 px-4 scale-90 sm:scale-100">
                 {dailyMissions.filter(m => !m.is_completed).slice(0, 2).map(m => {
@@ -823,17 +828,6 @@ const App: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {currentOptions.map((opt, i) => (<NoteButton key={`${currentIndex}-${i}-${opt}`} note={opt} disabled={feedback !== null} onClick={handleAnswer} />))}
-            </div>
-
-            {/* BOTÃO ENCERRAR PARTIDA (ACESSÍVEL) */}
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center z-50 pointer-events-auto">
-              <button
-                onClick={endGame}
-                className="px-8 py-4 bg-red-600/20 text-red-500 border-2 border-red-500/30 rounded-[28px] text-[10px] font-black uppercase tracking-[0.3em] transition-all active:scale-90 flex items-center justify-center gap-3 backdrop-blur-xl shadow-[0_0_30px_rgba(239,68,68,0.15)]"
-              >
-                <i className="fa-solid fa-flag-checkered text-lg"></i>
-                Encerrar Partida
-              </button>
             </div>
           </div>
         )
