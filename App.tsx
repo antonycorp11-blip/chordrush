@@ -110,7 +110,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.4.0';
+      const currentVersion = '7.4.5';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -120,7 +120,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.4.0');
+    localStorage.setItem('chordRush_version', '7.4.5');
     setShowChangelog(false);
   };
 
@@ -418,7 +418,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.4.0</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.4.5</p>
               </div>
             </div>
 
@@ -813,35 +813,35 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>
               <div className="mb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Ciclo Semanal Ativo</span>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.4.0</span></h2>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Correções Estruturais</span>
+                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.4.5</span></h2>
               </div>
               <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-500 border border-green-500/20">
-                    <i className="fa-solid fa-clock-rotate-left text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                    <i className="fa-solid fa-users text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Reset Automático</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">O ranking agora reseta sozinho todo **Domingo às 22h**. Moedas, Cards e Patentes são permanentes!</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ranking Permanente</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Agora os nomes não somem no reset! Quem já jogou continua no ranking com 0 pontos até bater um novo recorde.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                    <i className="fa-solid fa-link text-xl"></i>
+                    <i className="fa-solid fa-triangle-exclamation text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Dica de Sincronia</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Navegadores diferentes (Safari vs Chrome) são "dispositivos" isolados no iPhone. Para manter seu usuário, use sempre o mesmo navegador ou instale o ícone.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nota: Safari vs Chrome</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">No iPhone, se você mudar de navegador (ex: Safari para Chrome), o jogo cria um novo perfil. Escolha um e use sempre o mesmo para não perder o progresso.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-                    <i className="fa-solid fa-bug-slash text-xl"></i>
+                    <i className="fa-solid fa-image text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Fix do Ícone (404)</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Corrigimos o erro ao abrir o jogo pelo ícone da tela inicial. Se o erro persistir, remova o ícone e adicione-o novamente.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ícone Premium</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Corrigimos o caminho do ícone. Remova o ícone antigo e adicione à tela de início novamente para ver o novo visual.</p>
                   </div>
                 </div>
               </div>

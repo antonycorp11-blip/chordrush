@@ -1,0 +1,17 @@
+{
+    "short_name": "ChordRush",
+    "name": "Chord Rush - Master the Chords",
+    "icons": [
+        {
+            "src": "app_icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "start_url": "/?pwa=true",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#0a0a0a",
+    "background_color": "#0a0a0a"
+}

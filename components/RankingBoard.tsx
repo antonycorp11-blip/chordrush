@@ -25,7 +25,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         setLoading(true);
         try {
             const { data: rankingData, error: rError } = await supabase
-                .rpc('get_weekly_ranking_v6');
+                .rpc('get_weekly_ranking_v7');
 
             if (rError) throw rError;
 
@@ -123,7 +123,7 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     <div className="flex flex-col">
                         <h2 className="text-3xl font-black italic tracking-tighter text-white uppercase leading-none">RANKING <span className="text-orange-500">GERAL</span></h2>
                         <span className="text-[7px] font-black text-white/30 uppercase tracking-[0.3em] mt-1 italic">
-                            {lastSync ? `Atualizado: ${lastSync.toLocaleTimeString()}` : 'V7.4.0 • Reset Auto aos Domingos 22h'}
+                            {lastSync ? `Atualizado: ${lastSync.toLocaleTimeString()}` : 'V7.4.5 • Ranking Permanente Habilitado'}
                         </span>
                     </div>
                 </div>
