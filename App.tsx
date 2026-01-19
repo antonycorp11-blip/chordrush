@@ -16,6 +16,11 @@ import { CardStore } from './components/CardStore';
 import { CARDS } from './constants/cards';
 import { getPlayerTitle, getNextLevelProgress } from './utils/titles';
 import { ClefOpeningModal } from './components/ClefOpeningModal';
+import { StoryModal } from './components/StoryModal';
+import { DialogueOverlay } from './components/DialogueOverlay';
+import { BossVictoryModal } from './components/BossVictoryModal';
+import { ARENA_DIALOGUES, DialogueInteraction } from './utils/dialogues';
+import { getCurrentArena, ARENAS } from './utils/arenas';
 
 const App: React.FC = () => {
   const [stats, setStats] = useState<GameStats>(() => {
@@ -25,13 +30,26 @@ const App: React.FC = () => {
       return {
         playerName: parsed.playerName || '',
         highScore: parsed.highScore || 0,
-        totalXP: parsed.totalXP || 0,
+        acordeCoins: parsed.acordeCoins || 0,
         selectedCardId: parsed.selectedCardId,
-        accumulatedXP: parsed.accumulatedXP || 0
+        accumulatedXP: parsed.accumulatedXP || 0,
+        recoveryPin: parsed.recoveryPin,
+        unlockedArenaId: parsed.unlockedArenaId || 1,
+        seenStoryIds: parsed.seenStoryIds || []
       };
     }
-    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0, recoveryPin: '' };
+    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0, recoveryPin: '', unlockedArenaId: 1, seenStoryIds: [] };
   });
+
+  const calculateCurrentArena = () => {
+    const xpArena = getCurrentArena(stats.accumulatedXP || 0);
+    const unlockedId = stats.unlockedArenaId || 1;
+
+    const effectiveId = Math.min(xpArena.id, unlockedId);
+    return ARENAS.find(a => a.id === effectiveId) || ARENAS[0];
+  };
+
+  const currentArena = calculateCurrentArena();
 
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
   const [mode, setMode] = useState<GameMode>(GameMode.NORMAL);
@@ -70,9 +88,71 @@ const App: React.FC = () => {
     maxCombo: 0
   });
 
+  const [bossStatus, setBossStatus] = useState<'idle' | 'taking-damage' | 'attacking'>('idle');
+  const [playerHP, setPlayerHP] = useState(100);
+  const [activeMissionNotifId, setActiveMissionNotifId] = useState<string | null>(null);
+  const notifTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [projectiles, setProjectiles] = useState<Array<{ id: number, x: number, y: number, isSpecial: boolean }>>([]);
+  const [isSpecialCharged, setIsSpecialCharged] = useState(false);
+  const [showBossIntro, setShowBossIntro] = useState(false);
+  const [bossPhrase, setBossPhrase] = useState('');
+  const [activeStoryId, setActiveStoryId] = useState<number | null>(null);
+  const [showBossVictory, setShowBossVictory] = useState(false);
+  const [victoryHandled, setVictoryHandled] = useState(false);
+
+  // Dialogue System State
+  const [activeDialogue, setActiveDialogue] = useState<DialogueInteraction | null>(null);
+  const dialogueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastDialogueIdRef = useRef<string | null>(null);
+
+  // Constants have been moved to ARENAS config.
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const attackSfxRef = useRef<HTMLAudioElement | null>(null);
+  const damageSfxRef = useRef<HTMLAudioElement | null>(null);
+
+  const startBattleMusic = () => {
+    const musicPath = currentArena.bgm;
+
+    // Check if we need to switch tracks
+    if (!bgmRef.current || !bgmRef.current.src.includes(encodeURI(musicPath))) {
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+      }
+      bgmRef.current = new Audio(musicPath);
+      bgmRef.current.loop = true;
+      bgmRef.current.volume = 0.3;
+    }
+
+    bgmRef.current.play().catch(e => console.log("Áudio aguardando interação"));
+  };
+
+  const playAttackSfx = () => {
+    if (!attackSfxRef.current) attackSfxRef.current = new Audio('/assets/audio/attack.mp3');
+    attackSfxRef.current.currentTime = 0;
+    attackSfxRef.current.volume = 0.4;
+    attackSfxRef.current.play().catch(() => { });
+  };
+
+  const playDamageSfx = () => {
+    if (!damageSfxRef.current) damageSfxRef.current = new Audio('/assets/audio/damage.mp3');
+    damageSfxRef.current.currentTime = 0;
+    damageSfxRef.current.volume = 0.5;
+    damageSfxRef.current.play().catch(() => { });
+  };
+
+  const stopBattleMusic = () => {
+    if (bgmRef.current) {
+      bgmRef.current.pause();
+      bgmRef.current.currentTime = 0;
+    }
+  };
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isEndingRef = useRef(false);
+  const reactionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [bossReactionSpeech, setBossReactionSpeech] = useState<string | null>(null);
 
   const scoreRef = useRef(0);
   const levelRef = useRef(1);
@@ -92,7 +172,7 @@ const App: React.FC = () => {
         const deviceId = getDeviceId();
         const { data } = await supabase
           .from('players')
-          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id')
           .eq('device_id', deviceId)
           .maybeSingle();
 
@@ -103,7 +183,9 @@ const App: React.FC = () => {
             selectedCardId: data.selected_card_id,
             acordeCoins: (data.acorde_coins !== null && data.acorde_coins !== undefined) ? data.acorde_coins : prev.acordeCoins,
             accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP,
-            recoveryPin: data.recovery_pin
+            recoveryPin: data.recovery_pin,
+            unlockedArenaId: data.unlocked_arena_id || prev.unlockedArenaId || 1,
+            seenStoryIds: data.seen_story_ids || prev.seenStoryIds || []
           }));
           if (!data.name) setShowNameModal(true);
           fetchDailyMissions();
@@ -116,7 +198,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.6.0';
+      const currentVersion = '8.0.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -126,27 +208,33 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.6.0');
+    localStorage.setItem('chordRush_version', '8.0.0');
     setShowChangelog(false);
   };
 
   const savePlayerProfile = async () => {
     const deviceId = getDeviceId();
     const nameToSave = tempName.trim().toUpperCase() || `JOGADOR-${deviceId.slice(0, 4)}`;
+
+    // OPTIMISTIC UPDATE: Update UI immediately so user isn't stuck
+    setStats(prev => ({ ...prev, playerName: nameToSave }));
+    setIsRenaming(false);
+    setShowNameModal(false);
+    setTempName('');
+
+    // Run Backend Sync in Background
     try {
       const { error } = await supabase.rpc('update_player_name_secure', {
         device_id_param: deviceId,
         new_name: nameToSave
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Background Sync Error:', error);
+        // Silently fail or retry - for now we let the user play
+      }
 
-      setStats(prev => ({ ...prev, playerName: nameToSave }));
-      setIsRenaming(false);
-      setShowNameModal(false);
-      setTempName('');
-
-      // Re-sincroniza para pegar o PIN gerado se for novo jogador
+      // Re-sincroniza PIN
       const { data: newData } = await supabase
         .from('players')
         .select('recovery_pin')
@@ -156,11 +244,8 @@ const App: React.FC = () => {
       if (newData) {
         setStats(prev => ({ ...prev, recoveryPin: newData.recovery_pin }));
       }
-
-      return true;
     } catch (err) {
-      console.error('Erro ao salvar perfil (Seguro):', err);
-      return null;
+      console.error('Erro ao salvar perfil (Background):', err);
     }
   };
 
@@ -283,11 +368,9 @@ const App: React.FC = () => {
 
       setDailyMissions(prev => prev.map(m => m.id === missionId ? { ...m, reward_claimed: true } : m));
 
-      // Atualizar saldos localmente
+      // Atualizar saldos localmente (Claves não dão mais XP para não derrotar o Boss via Menu)
       if (data.type === 'acorde_coins') {
         setStats(prev => ({ ...prev, acordeCoins: prev.acordeCoins + data.amount }));
-      } else if (data.type === 'patente_xp') {
-        setStats(prev => ({ ...prev, accumulatedXP: prev.accumulatedXP + data.amount }));
       }
     } catch (err) {
       console.error('Erro ao abrir clave:', err);
@@ -295,6 +378,15 @@ const App: React.FC = () => {
   };
 
   const startNewGame = async (selectedMode: GameMode) => {
+    // Check for story trigger BEFORE starting
+    // Use 'currentArena.id' because it already handles Debug vs XP logic correctly at the top of the component
+    const targetArenaId = currentArena.id;
+
+    if (!stats.seenStoryIds?.includes(targetArenaId)) {
+      setActiveStoryId(targetArenaId);
+      return; // Pause start until story is closed
+    }
+
     if (timerRef.current) clearInterval(timerRef.current);
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
 
@@ -323,7 +415,18 @@ const App: React.FC = () => {
     setChordsPool(initialPool);
     setCurrentIndex(0);
     setCurrentOptions(generateOptions(initialPool[0]));
+
+    // Iniciar Sequência de Intro do Boss
+    const introPhrases = currentArena.boss.phrases.intro;
+    const phrase = introPhrases[Math.floor(Math.random() * introPhrases.length)];
+    setBossPhrase(phrase);
+    setShowBossIntro(true);
     setGameState(GameState.PLAYING);
+    startBattleMusic();
+
+    setTimeout(() => {
+      setShowBossIntro(false);
+    }, 4000);
 
     // Resetar progresso da sessão para missões
     setMissionProgress({
@@ -336,13 +439,31 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (gameState === GameState.PLAYING) {
+    // Timer Lógica: Só roda se estiver PLAYING, sem intro e SEM dialogo ativo
+    if (gameState === GameState.PLAYING && !showBossIntro && !activeDialogue) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => prev <= 1 ? 0 : prev - 1);
       }, 1000);
-    } else if (timerRef.current) clearInterval(timerRef.current);
+
+      // Configurar gatilho aleatório de diálogo
+      if (!dialogueTimerRef.current) {
+        dialogueTimerRef.current = setInterval(() => {
+          // 15% chance a cada 5 segundos (verificado aqui a cada 1s no loop principal seria mto frequente, melhor separado ou check simples)
+          // Vamos fazer um check a cada 1s mesmo, mas com chance muito baixa (ex: 2% por segundo -> ~ uma vez a cada 50s)
+          // Usuário pediu "aleatoriamente". Vamos tentar algo como: a cada tick do relógio principal?
+          // Melhor não poluir o timer principal.
+        }, 1000);
+      }
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [gameState]);
+  }, [gameState, showBossIntro, activeDialogue]);
+
+  // EFEITO SEPARADO PARA O GATILHO DE DIÁLOGO REMOVIDO EM FAVOR DO GATILHO POR ATAQUE ESPECIAL
+  useEffect(() => {
+    return () => { if (dialogueTimerRef.current) clearInterval(dialogueTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     if (gameState === GameState.PLAYING && timeLeft === 0 && !isEndingRef.current) endGame();
@@ -360,6 +481,7 @@ const App: React.FC = () => {
     const finalXP = sessionXP;
 
     setGameState(GameState.GAMEOVER);
+    stopBattleMusic();
     setStats(prev => ({
       ...prev,
       highScore: Math.max(prev.highScore, finalScore),
@@ -389,16 +511,97 @@ const App: React.FC = () => {
       }
     }
     setIsSavingScore(false);
+
+    // VERIFICAR DESBLOQUEIO DE ARENA (Feature de Progressão)
+    // Se o jogador venceu (Score > 0 implica vitória do nível ou término com pontos)
+    // E estava na arena máxima desbloqueada
+    // E a barra de progresso estava cheia (Boss HP <= 0)
+    const currentUnlockedId = stats.unlockedArenaId || 1;
+    // Recalcula progresso localmente para ter certeza
+    const xpArenaForCalc = getCurrentArena((stats.accumulatedXP || 0) + finalXP);
+    // Nota: O cálculo exato de arenaProgress depende do minXP da arena atual.
+    // Mas simplificando: Se a arena atual (pelo ID) é menor que a arena de XP, então progresso é 100%
+    const isBossDefeated = (stats.accumulatedXP || 0) + finalXP >= nextArena.minXP;
+
+    // Se estavamos jogando na arena limite E o Boss estava "vulnerável" (HP zero / Progresso 100%)
+    if (currentArena.id === currentUnlockedId && isBossDefeated && finalScore > 0) {
+      // Desbloquear próxima arena
+      const nextId = currentUnlockedId + 1;
+      // Verifica se existe próxima arena
+      const existsNext = ARENAS.find(a => a.id === nextId);
+
+      if (existsNext) {
+        try {
+          // Atualiza Local
+          setStats(prev => ({ ...prev, unlockedArenaId: nextId }));
+          alert(`🏆 GUARDIÃO DERROTADO! Arena ${nextId} Desbloqueada!`);
+
+          // Atualiza Remoto via RPC
+          await supabase.rpc('unlock_next_arena', {
+            device_id_param: deviceId,
+            current_arena_id: currentUnlockedId
+          });
+        } catch (err) {
+          console.error("Erro ao desbloquear arena:", err);
+        }
+      }
+    }
   };
 
-  const handleAnswer = (selectedNote: NoteName) => {
+  const handleBossDefeatedAdvance = async () => {
+    setShowBossVictory(false);
+    stopBattleMusic();
+
+    const finalScore = score;
+    const finalLevel = currentLevel;
+    const finalXP = sessionXP; // Note: this is the sessionXP *before* the last hit that triggered it? 
+    // No, sessionXP state updates are async. But we should be close enough.
+    // Actually, we should probably update state before calling this.
+    // Given the modal pauses flow, sessionXP should be settled.
+
+    const nextId = (stats.unlockedArenaId || 1) + 1;
+
+    // Update Local Stats
+    setStats(prev => ({
+      ...prev,
+      highScore: Math.max(prev.highScore, finalScore),
+      acordeCoins: prev.acordeCoins + Math.floor(finalXP * 0.1),
+      accumulatedXP: (prev.accumulatedXP || 0) + finalXP,
+      unlockedArenaId: nextId
+    }));
+
+    // Async Save
+    const deviceId = getDeviceId();
+    supabase.rpc('secure_end_game_v5', {
+      device_id_param: deviceId,
+      score_param: finalScore,
+      level_param: finalLevel,
+      xp_param: finalXP
+    });
+    supabase.rpc('unlock_next_arena', {
+      device_id_param: deviceId,
+      current_arena_id: stats.unlockedArenaId || 1
+    });
+
+    // Trigger Story & New Game flow
+    setActiveStoryId(nextId);
+  };
+
+  const handleAnswer = (selectedNote: NoteName, clickX?: number, clickY?: number) => {
     const currentChord = chordsPool[currentIndex];
     if (selectedNote === currentChord.note) {
       const pointsGain = 10 * currentLevel;
       const newScore = score + pointsGain;
       const newHits = (prevHits: number) => prevHits + 1;
       const newCombo = combo + 1;
-      const xpGain = getXPForLevel(currentLevel);
+      // DANO ESCALÁVEL (Balanceado): Metade do poder anterior
+      // Arena 1: 1x
+      // Arena 2: 2x
+      // Arena 3: 5x
+      // Arena 4: 8x
+      // Arena 5: 13x
+      const arenaMultiplier = Math.ceil(Math.pow(currentArena.id, 2) / 2);
+      const xpGain = getXPForLevel(currentLevel) * arenaMultiplier;
       const bonus = getTimeBonus(currentLevel);
 
       setScore(newScore);
@@ -410,21 +613,133 @@ const App: React.FC = () => {
       setTimeAdded(bonus);
       setTimeout(() => setTimeAdded(null), 1000);
 
-      // Rastrear progresso da missão
-      setMissionProgress(prev => ({
-        ...prev,
-        bemol: currentChord.symbol.includes('b') ? prev.bemol + 1 : prev.bemol,
-        sustenido: currentChord.symbol.includes('#') ? prev.sustenido + 1 : prev.sustenido,
-        minor: currentChord.symbol.includes('m') ? prev.minor + 1 : prev.minor,
-        perfectCount: prev.perfectCount + 1,
-        maxCombo: Math.max(prev.maxCombo, newCombo)
-      }));
+      // Check Boss Victory
+      const currentTotalXP = (stats.accumulatedXP || 0) + sessionXP + xpGain; // sessionXP is stale in this render, but we just updated state. using prev + gain would be safer but complex to access.
+      // Actually setSessionXP updater was: prev => prev + xpGain. 
+      // We can use (sessionXP + xpGain) as approximation or ref.
+      // Better: use sessionXPRef.current? No, updated in effect.
+      // Let's use the calculated value:
+      const estimatedSessionXP = sessionXP + xpGain;
+      const estimatedTotalXP = (stats.accumulatedXP || 0) + estimatedSessionXP;
 
-      // Aumentar nível a cada 10 acertos reais
+      const nextArena = ARENAS.find(a => a.id === currentArena.id + 1);
+      if (nextArena && estimatedTotalXP >= nextArena.minXP && !victoryHandled) {
+        setVictoryHandled(true);
+        setShowBossVictory(true);
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+
+      setMissionProgress(prev => {
+        const isBemol = currentChord.symbol.includes('b');
+        const isSust = currentChord.symbol.includes('#');
+        const isMinor = currentChord.symbol.includes('m');
+
+        const progressedMission = dailyMissions.find(m => {
+          if (m.is_completed) return false;
+          if (isBemol && m.goal_type === 'bemol_count') return true;
+          if (isSust && m.goal_type === 'sustenido_count') return true;
+          if (isMinor && m.goal_type === 'minor_count') return true;
+          if (m.goal_type === 'session_xp') return true;
+          if (m.goal_type === 'perfect_sequence') return true;
+          return false;
+        });
+
+        if (progressedMission) {
+          setActiveMissionNotifId(progressedMission.id);
+          if (notifTimeoutRef.current) clearTimeout(notifTimeoutRef.current);
+          notifTimeoutRef.current = setTimeout(() => setActiveMissionNotifId(null), 2000);
+        }
+
+        return {
+          ...prev,
+          bemol: isBemol ? prev.bemol + 1 : prev.bemol,
+          sustenido: isSust ? prev.sustenido + 1 : prev.sustenido,
+          minor: isMinor ? prev.minor + 1 : prev.minor,
+          perfectCount: prev.perfectCount + 1,
+          maxCombo: Math.max(prev.maxCombo, newCombo)
+        };
+      });
+
+      // Lógica de Ataque Especial & Gatilho de Diálogo
+      if (isSpecialCharged) {
+        setSessionXP(prev => prev + (xpGain * 2));
+        setIsSpecialCharged(false);
+
+        // TRIGGER DIALOGUE AFTER SPECIAL ATTACK (1.5s delay for animation)
+        setTimeout(() => {
+          // Check state ref or variable to ensure we are still playing? 
+          // We use the ref version of 'activeDialogue' checking in effect, but here we just set it.
+          // But we must assume 'gameState' is accessible or check ref if possible, but 'gameState' is in scope.
+          // However, inside setTimeout closure, it captures old value unless we use ref.
+          // Since we don't have gameStateRef, let's just trigger it. The overlay handles display.
+          const interactions = ARENA_DIALOGUES[currentArena.id] || [];
+          if (interactions.length > 0) {
+            // ALWAYS trigger dialogue for testing purposes as requested
+            // if (Math.random() < 0.5) { // Anterior: 50%
+            if (true) {
+              let pool = interactions;
+              // Avoid repeating the last dialogue if possible
+              if (interactions.length > 1 && lastDialogueIdRef.current) {
+                pool = interactions.filter(i => i.id !== lastDialogueIdRef.current);
+              }
+              const randomInteraction = pool[Math.floor(Math.random() * pool.length)];
+              lastDialogueIdRef.current = randomInteraction.id;
+              setActiveDialogue(randomInteraction);
+            }
+          }
+        }, 1500);
+
+      } else if (newCombo > 0 && newCombo % 10 === 0) {
+        setIsSpecialCharged(true);
+      }
+
+      // Lançar Projetil com ponto de origem dinâmico
+      const projId = Date.now();
+      let startX = 0;
+      let startY = 0;
+      if (clickX !== undefined && clickY !== undefined) {
+        // Calcular posição relativa ao centro do container de jogo
+        startX = clickX - window.innerWidth / 2;
+        startY = clickY - (window.innerHeight - 200);
+      }
+
+      setProjectiles(prev => [...prev, { id: projId, x: startX, y: startY, isSpecial: isSpecialCharged }]);
+      playAttackSfx(); // Som do disparo mágico imediato
+
+      // Reação do Boss ao Dano (40% de chance)
+      // Reação do Boss ao Dano (40% de chance)
+      if (Math.random() > 0.6) {
+        const damagePhrases = currentArena.boss.phrases.damage;
+        const reaction = damagePhrases[Math.floor(Math.random() * damagePhrases.length)];
+        setBossReactionSpeech(reaction);
+        if (reactionTimeoutRef.current) clearTimeout(reactionTimeoutRef.current);
+        reactionTimeoutRef.current = setTimeout(() => setBossReactionSpeech(null), 2000);
+      }
+
+      setTimeout(() => {
+        setProjectiles(prev => prev.filter(p => p.id !== projId));
+        setBossStatus('taking-damage');
+        playDamageSfx(); // Som do impacto cronometrado com o projétil
+        setTimeout(() => setBossStatus('idle'), 400);
+      }, 700);
+
       if ((hits + 1) % 10 === 0 && (hits + 1) > 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
     } else {
       setFeedback({ type: 'wrong', note: currentChord.note });
       setCombo(0);
+      setIsSpecialCharged(false);
+      setBossStatus('attacking');
+      setPlayerHP(prev => Math.max(0, prev - 10));
+      setTimeout(() => setBossStatus('idle'), 500);
+
+      // Reação do Boss ao Erro (60% de chance)
+      if (Math.random() > 0.4) {
+        const errorPhrases = currentArena.boss.phrases.error;
+        const reaction = errorPhrases[Math.floor(Math.random() * errorPhrases.length)];
+        setBossReactionSpeech(reaction);
+        if (reactionTimeoutRef.current) clearTimeout(reactionTimeoutRef.current);
+        reactionTimeoutRef.current = setTimeout(() => setBossReactionSpeech(null), 2000);
+      }
     }
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
     feedbackTimeoutRef.current = setTimeout(() => {
@@ -458,538 +773,755 @@ const App: React.FC = () => {
 
   const selectedEffectCard = CARDS.find(c => c.id === stats.selectedCardId);
 
+
+
+  const nextArena = ARENAS.find(a => a.id === currentArena.id + 1);
+
+  let arenaProgress = 0;
+  const effectiveAccumulatedXP = (stats.accumulatedXP || 0);
+
+  const currentTotalXP = effectiveAccumulatedXP + sessionXP;
+
+  if (nextArena) {
+    // Arenas 1-4
+    const range = nextArena.minXP - currentArena.minXP;
+    const currentInArena = Math.max(0, currentTotalXP - currentArena.minXP);
+    arenaProgress = Math.min(100, (currentInArena / range) * 100);
+  } else {
+    // Arena 5 (Final)
+    const finalRange = 25000;
+    const currentInArena = Math.max(0, currentTotalXP - currentArena.minXP);
+    arenaProgress = Math.min(100, (currentInArena / finalRange) * 100);
+  }
+
+  const bossHP = 100 - arenaProgress;
+  const isPlaying = gameState === GameState.PLAYING;
+
   return (
-    <div className={`fixed inset-0 transition-colors duration-1000 ${gameState === GameState.PLAYING ? THEMES[currentLevel as keyof typeof THEMES] : 'bg-[#0a0a0a]'} text-white flex flex-col items-center select-none overflow-hidden`}>
+    <div className="fixed inset-0 bg-[#050505] flex items-center justify-center overflow-hidden">
+      {/* Container "Mobile View" para Desktop */}
+      <div
+        className={`relative w-full h-full max-w-[480px] mx-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-all duration-1000 flex flex-col items-center select-none overflow-hidden ${isPlaying ? currentArena.colors.text : 'text-white'}`}
+        style={isPlaying ? {
+          backgroundImage: `url(${currentArena.bgImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: '#0a0a0a'
+        } : {
+          backgroundColor: '#0a0a0a'
+        }}
+      >
+        {/* Overlay de Proteção para Legibilidade (Apenas no Jogo) */}
+        {isPlaying && <div className="absolute inset-0 z-0 pointer-events-none bg-black/40" />}
 
-      {gameState === GameState.MENU && (
-        <div className="w-full h-full max-h-screen flex flex-col items-center justify-center p-4 overflow-hidden relative bg-[#0a0a0a]">
-          <div className="w-full max-w-sm flex flex-col items-center gap-6 z-10">
-            <div className="text-center">
-              <div className="h-10 mb-2 flex items-center justify-center opacity-60">
-                <img
-                  src="school_logo.png"
-                  alt="Escola Logo"
-                  className="max-h-full w-auto grayscale brightness-200"
-                  onError={(e) => (e.currentTarget.style.display = 'none')}
-                />
-              </div>
-              <h1 className="text-5xl sm:text-7xl font-black tracking-tighter italic leading-none block">
-                CHORD<span className="text-orange-500">RUSH</span>
-              </h1>
-              <div className="flex flex-col items-center gap-1 mt-1">
-                <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.6.0</p>
-              </div>
-            </div>
+        {gameState === GameState.MENU && (
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden relative">
 
-            <div className="w-full space-y-4">
-              {((showNameModal || isRenaming) && syncDone) ? (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
-                  <div className="space-y-2">
-                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">
-                      {isRecovering ? 'Digite seus dados de acesso' : (tempName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?')}
-                    </p>
-                    <input
-                      type="text"
-                      placeholder="DIGITE SEU NOME"
-                      value={tempName || ''}
-                      onChange={(e) => setTempName(e.target.value.toUpperCase())}
-                      className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10"
-                    />
-                    {isRecovering && (
-                      <input
-                        type="tel"
-                        maxLength={4}
-                        placeholder="PIN (4 DÍGITOS)"
-                        value={recoveryPinInput}
-                        onChange={(e) => setRecoveryPinInput(e.target.value)}
-                        className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10 mt-2"
-                      />
-                    )}
-                    <p className="text-[9px] text-white/20 text-center uppercase font-bold">Mínimo 2 caracteres</p>
-                  </div>
-
-                  {isRecovering ? (
-                    <button
-                      onClick={() => tempName.trim().length >= 2 && recoveryPinInput.length === 4 && recoverAccount(tempName, recoveryPinInput)}
-                      disabled={tempName.trim().length < 2 || recoveryPinInput.length < 4}
-                      className={`w-full relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-[8px] uppercase ${(tempName.trim().length < 2 || recoveryPinInput.length < 4) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-orange-600'}`}
-                    >
-                      RESGATAR CONTA
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => tempName.trim().length >= 2 && savePlayerProfile()}
-                      disabled={tempName.trim().length < 2}
-                      className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${tempName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
-                    >
-                      CONFIRMAR NOME
-                    </button>
-                  )}
-
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => {
-                        setIsRecovering(!isRecovering);
-                        setRecoveryPinInput('');
-                      }}
-                      className="w-full text-orange-500 text-[10px] font-black uppercase tracking-widest py-2 active:opacity-50"
-                    >
-                      {isRecovering ? 'Quero criar novo perfil' : 'Já jogo? Resgatar minha conta'}
-                    </button>
-                    {(isRenaming || (showNameModal && stats.playerName)) && (
-                      <button onClick={() => { setIsRenaming(false); setShowNameModal(false); setTempName(''); }} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
-                    )}
+            <div className="w-full max-w-sm flex flex-col items-center gap-6 z-10">
+              <div className="text-center">
+                <div className="h-10 mb-2 flex items-center justify-center opacity-60">
+                  <img
+                    src="school_logo.png"
+                    alt="Escola Logo"
+                    className="max-h-full w-auto grayscale brightness-200"
+                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                  />
+                </div>
+                <h1 className="text-5xl font-black tracking-tighter italic leading-none block font-medieval">
+                  CHORD<span className="text-orange-500">RUSH</span>
+                </h1>
+                <div className="flex flex-col items-center gap-1 mt-1">
+                  <h2 className="text-xl font-black uppercase tracking-[0.2em] text-purple-500 font-medieval drop-shadow-lg animate-pulse">
+                    Lorde Silêncio
+                  </h2>
+                  <p className={`font-black tracking-[0.3em] text-[10px] uppercase ${currentArena.colors.accent} mt-2`}>Master the Fretboard</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.6.0</p>
+                    <span className={`px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border ${currentArena.colors.border} ${currentArena.colors.secondary}`}>
+                      {currentArena.name}
+                    </span>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-5 w-full">
-                  <button
-                    onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
-                    disabled={!stats.playerName.trim() || !syncDone}
-                    className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
-                  >
-                    JOGAR AGORA
-                  </button>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setGameState(GameState.STORE)}
-                      className="w-full relative overflow-hidden bg-white/5 border border-white/10 text-white font-black p-4 rounded-2xl text-[11px] tracking-widest transition-all flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 uppercase"
-                    >
-                      <i className="fa-solid fa-cart-shopping text-white/50"></i>
-                      Loja de Cards
-                    </button>
-                    <button
-                      onClick={() => setGameState(GameState.RANKING)}
-                      className="w-full bg-white/5 border border-white/10 text-white font-black p-4 rounded-2xl text-[11px] tracking-widest transition-all flex items-center justify-center gap-2 hover:bg-white/10 active:scale-95 uppercase"
-                    >
-                      <i className="fa-solid fa-trophy text-yellow-500"></i>
-                      Ranking Global
-                    </button>
-                  </div>
-
-                  {syncDone && (
+              <div className="w-full space-y-4">
+                {((showNameModal || isRenaming) && syncDone) ? (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
                     <div className="space-y-2">
-                      <div
-                        onClick={() => setShowPatentsModal(true)}
-                        className={`group w-full flex justify-between items-center rounded-[32px] p-6 border shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 cursor-pointer active:scale-[0.98] ${selectedEffectCard ? 'bg-transparent border-white/10' : 'bg-neutral-900/40 border-white/5'}`}
-                      >
-                        {/* EFEITOS ESPECIAIS (MESMO DO RANKING) */}
-                        {selectedEffectCard?.rarity === 'lendário' && (
-                          <>
-                            <div className="absolute -inset-10 z-0 animate-pulse blur-3xl opacity-20 rounded-[60px] bg-yellow-400/20" />
-                            <div className="absolute inset-x-[-20px] inset-y-[-10px] z-0 pointer-events-none mix-blend-screen opacity-40 overflow-hidden rounded-[40px]">
-                              <video autoPlay loop muted playsInline className="w-full h-full object-cover scale-[1.1]">
-                                <source src="/assets/cards/l1_effect.mp4" type="video/mp4" />
-                              </video>
-                            </div>
-                          </>
-                        )}
-
-                        {selectedEffectCard?.rarity === 'épico' && (
-                          <div className="absolute -inset-4 z-0 animate-pulse blur-3xl opacity-20 rounded-[40px] bg-orange-600" />
-                        )}
-
-                        {selectedEffectCard && (
-                          <>
-                            <div className="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-700" style={{ backgroundImage: selectedEffectCard.image }} />
-                            <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
-
-                            {/* BRILHO LATERAL CRISTALINO (MESMO DO RANKING) */}
-                            <div className="absolute left-0 top-0 bottom-0 w-1 z-20 overflow-hidden">
-                              <div className={`h-full relative ${selectedEffectCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-600 shadow-[0_0_15px_rgba(250,204,21,1)]' :
-                                selectedEffectCard.rarity === 'épico' ? 'bg-orange-500' :
-                                  selectedEffectCard.rarity === 'raro' ? 'bg-cyan-400' :
-                                    'bg-blue-400'
-                                }`}>
-                                <div className={`absolute inset-0 bg-gradient-to-t from-transparent via-white/80 to-transparent ${selectedEffectCard.rarity === 'lendário' ? 'animate-[bounce_2s_infinite]' : 'bg-white/40 animate-[pulse_2s_infinite]'}`} />
-                              </div>
-                            </div>
-                          </>
-                        )}
-
-                        <div className="flex flex-col relative z-20 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className={`px-2 py-0.5 rounded-full border transition-all flex items-center gap-1.5 ${getPlayerTitle(stats.accumulatedXP || 0).border}`}>
-                              <span className={`text-[6px] uppercase font-black tracking-widest ${getPlayerTitle(stats.accumulatedXP || 0).style}`}>
-                                {getPlayerTitle(stats.accumulatedXP || 0).title}
-                              </span>
-                            </div>
-                            <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">Dossiê do Atleta</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase drop-shadow-lg">
-                              {stats.playerName || '---'}
-                            </span>
-                            {stats.recoveryPin && (
-                              <div className="bg-orange-500/20 px-2 py-1 rounded-lg border border-orange-500/30 flex items-center gap-1.5" title="Seu código de recuperação">
-                                <span className="text-[8px] font-black text-orange-500 uppercase tracking-tighter">PIN:</span>
-                                <span className="text-xs font-black text-white tracking-widest">{stats.recoveryPin}</span>
-                              </div>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTempName(stats.playerName);
-                                setIsRenaming(true);
-                              }}
-                              className="bg-white/5 hover:bg-white/10 p-2 rounded-xl text-white/40 transition-colors border border-white/5"
-                            >
-                              <i className="fa-solid fa-pen text-[x-small]"></i>
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-4 mt-2">
-                            <div className="flex flex-col">
-                              <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">XP Acumulado</span>
-                              <span className="text-xs font-black text-orange-400 tracking-tighter">{(stats.accumulatedXP || 0).toLocaleString()} <span className="text-[6px] opacity-50">XP</span></span>
-                            </div>
-                            <div className="w-px h-6 bg-white/10" />
-                            <div className="flex flex-col">
-                              <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">Saldo Atual</span>
-                              <div className="flex items-center gap-1">
-                                <i className="fa-solid fa-coins text-[8px] text-yellow-500"></i>
-                                <span className="text-xs font-black text-white tracking-tighter">{(stats.acordeCoins || 0).toLocaleString()} <span className="text-[6px] opacity-30">Coins</span></span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="relative z-20 ml-2">
-                          <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i className="fa-solid fa-chevron-right text-white/10 text-xs"></i>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* BARRA DE PROGRESSO DO NÍVEL ATUAL */}
-                      <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-orange-500 rounded-full transition-all duration-1000"
-                          style={{ width: `${getNextLevelProgress(stats.accumulatedXP || 0)}%` }}
+                      <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">
+                        {isRecovering ? 'Digite seus dados de acesso' : (tempName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?')}
+                      </p>
+                      <input
+                        type="text"
+                        placeholder="DIGITE SEU NOME"
+                        value={tempName || ''}
+                        onChange={(e) => setTempName(e.target.value.toUpperCase())}
+                        className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10"
+                      />
+                      {isRecovering && (
+                        <input
+                          type="tel"
+                          maxLength={4}
+                          placeholder="PIN (4 DÍGITOS)"
+                          value={recoveryPinInput}
+                          onChange={(e) => setRecoveryPinInput(e.target.value)}
+                          className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10 mt-2"
                         />
-                      </div>
+                      )}
+                      <p className="text-[9px] text-white/20 text-center uppercase font-bold">Mínimo 2 caracteres</p>
+                    </div>
 
-                      {/* ÁREA DE MISSÕES DIÁRIAS (5 MISSÕES) */}
-                      <div className="w-full flex flex-col gap-2 mt-4">
-                        <div className="flex items-center justify-between px-1">
-                          <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">Missões do Dia</span>
-                          <span className="text-[8px] font-black text-orange-500 uppercase">{dailyMissions.filter(m => m.is_completed).length} / 5</span>
+                    {isRecovering ? (
+                      <button
+                        onClick={() => tempName.trim().length >= 2 && recoveryPinInput.length === 4 && recoverAccount(tempName, recoveryPinInput)}
+                        disabled={tempName.trim().length < 2 || recoveryPinInput.length < 4}
+                        className={`w-full relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-[8px] uppercase ${(tempName.trim().length < 2 || recoveryPinInput.length < 4) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-orange-600'}`}
+                      >
+                        RESGATAR CONTA
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => tempName.trim().length >= 2 && savePlayerProfile()}
+                        disabled={tempName.trim().length < 2}
+                        className={`w-full relative overflow-hidden ${currentArena.colors.button} font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.1)] active:shadow-none active:translate-y-[8px] uppercase ${tempName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:brightness-110'}`}
+                      >
+                        CONFIRMAR NOME
+                      </button>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => {
+                          setIsRecovering(!isRecovering);
+                          setRecoveryPinInput('');
+                        }}
+                        className={`w-full ${currentArena.colors.accent} text-[10px] font-black uppercase tracking-widest py-2 active:opacity-50`}
+                      >
+                        {isRecovering ? 'Quero criar novo perfil' : 'Já jogo? Resgatar minha conta'}
+                      </button>
+                      {(isRenaming || (showNameModal && stats.playerName)) && (
+                        <button onClick={() => { setIsRenaming(false); setShowNameModal(false); setTempName(''); }} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-5 w-full">
+                    <button
+                      onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
+                      disabled={!stats.playerName.trim() || !syncDone}
+                      className={`w-full relative overflow-hidden ${currentArena.colors.button} font-black py-5 rounded-2xl text-3xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[8px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:brightness-110'}`}
+                    >
+                      JOGAR AGORA
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setGameState(GameState.STORE)}
+                        className={`w-full relative overflow-hidden ${currentArena.colors.secondary} border ${currentArena.colors.border} ${currentArena.colors.text} font-black p-4 rounded-2xl text-[11px] tracking-widest transition-all flex items-center justify-center gap-2 hover:brightness-125 active:scale-95 uppercase`}
+                      >
+                        <i className={`fa-solid fa-cart-shopping ${currentArena.colors.accent}`}></i>
+                        Loja de Cards
+                      </button>
+                      <button
+                        onClick={() => setGameState(GameState.RANKING)}
+                        className={`w-full ${currentArena.colors.secondary} border ${currentArena.colors.border} ${currentArena.colors.text} font-black p-4 rounded-2xl text-[11px] tracking-widest transition-all flex items-center justify-center gap-2 hover:brightness-125 active:scale-95 uppercase`}
+                      >
+                        <i className="fa-solid fa-trophy text-yellow-500"></i>
+                        Ranking Global
+                      </button>
+                    </div>
+
+                    {syncDone && (
+                      <div className="space-y-2">
+                        <div
+                          onClick={() => setShowPatentsModal(true)}
+                          className={`group w-full flex justify-between items-center rounded-[32px] p-6 border shadow-2xl backdrop-blur-md relative overflow-hidden transition-all duration-500 cursor-pointer active:scale-[0.98] ${selectedEffectCard ? 'bg-transparent border-white/10' : 'bg-neutral-900/40 border-white/5'}`}
+                        >
+                          {/* EFEITOS ESPECIAIS (MESMO DO RANKING) */}
+                          {selectedEffectCard?.rarity === 'lendário' && (
+                            <>
+                              <div className="absolute -inset-10 z-0 animate-pulse blur-3xl opacity-20 rounded-[60px] bg-yellow-400/20" />
+                              <div className="absolute inset-x-[-20px] inset-y-[-10px] z-0 pointer-events-none mix-blend-screen opacity-40 overflow-hidden rounded-[40px]">
+                                <video autoPlay loop muted playsInline className="w-full h-full object-cover scale-[1.1]">
+                                  <source src="/assets/cards/l1_effect.mp4" type="video/mp4" />
+                                </video>
+                              </div>
+                            </>
+                          )}
+
+                          {selectedEffectCard?.rarity === 'épico' && (
+                            <div className="absolute -inset-4 z-0 animate-pulse blur-3xl opacity-20 rounded-[40px] bg-orange-600" />
+                          )}
+
+                          {selectedEffectCard && (
+                            <>
+                              <div className="absolute inset-0 bg-cover bg-center opacity-60 transition-all duration-700" style={{ backgroundImage: selectedEffectCard.image }} />
+                              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+
+                              {/* BRILHO LATERAL CRISTALINO (MESMO DO RANKING) */}
+                              <div className="absolute left-0 top-0 bottom-0 w-1 z-20 overflow-hidden">
+                                <div className={`h-full relative ${selectedEffectCard.rarity === 'lendário' ? 'bg-gradient-to-b from-yellow-300 via-white to-yellow-600 shadow-[0_0_15px_rgba(250,204,21,1)]' :
+                                  selectedEffectCard.rarity === 'épico' ? 'bg-orange-500' :
+                                    selectedEffectCard.rarity === 'raro' ? 'bg-cyan-400' :
+                                      'bg-blue-400'
+                                  }`}>
+                                  <div className={`absolute inset-0 bg-gradient-to-t from-transparent via-white/80 to-transparent ${selectedEffectCard.rarity === 'lendário' ? 'animate-[bounce_2s_infinite]' : 'bg-white/40 animate-[pulse_2s_infinite]'}`} />
+                                </div>
+                              </div>
+                            </>
+                          )}
+
+                          <div className="flex flex-col relative z-20 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className={`px-2 py-0.5 rounded-full border transition-all flex items-center gap-1.5 ${getPlayerTitle(stats.accumulatedXP || 0).border}`}>
+                                <span className={`text-[6px] uppercase font-black tracking-widest ${getPlayerTitle(stats.accumulatedXP || 0).style}`}>
+                                  {getPlayerTitle(stats.accumulatedXP || 0).title}
+                                </span>
+                              </div>
+                              <span className="text-[7px] font-black text-white/20 uppercase tracking-[0.2em]">Dossiê do Atleta</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase drop-shadow-lg">
+                                {stats.playerName || '---'}
+                              </span>
+                              {stats.recoveryPin && (
+                                <div className="bg-orange-500/20 px-2 py-1 rounded-lg border border-orange-500/30 flex items-center gap-1.5" title="Seu código de recuperação">
+                                  <span className="text-[8px] font-black text-orange-500 uppercase tracking-tighter">PIN:</span>
+                                  <span className="text-xs font-black text-white tracking-widest">{stats.recoveryPin}</span>
+                                </div>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setTempName(stats.playerName);
+                                  setIsRenaming(true);
+                                }}
+                                className="bg-white/5 hover:bg-white/10 p-2 rounded-xl text-white/40 transition-colors border border-white/5"
+                              >
+                                <i className="fa-solid fa-pen text-[x-small]"></i>
+                              </button>
+                            </div>
+                            <div className="flex items-center gap-4 mt-2">
+                              <div className="flex flex-col">
+                                <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">XP Acumulado</span>
+                                <span className="text-xs font-black text-orange-400 tracking-tighter">{(stats.accumulatedXP || 0).toLocaleString()} <span className="text-[6px] opacity-50">XP</span></span>
+                              </div>
+                              <div className="w-px h-6 bg-white/10" />
+                              <div className="flex flex-col">
+                                <span className="text-[6px] text-white/30 font-black uppercase tracking-widest">Saldo Atual</span>
+                                <div className="flex items-center gap-1">
+                                  <i className="fa-solid fa-coins text-[8px] text-yellow-500"></i>
+                                  <span className="text-xs font-black text-white tracking-tighter">{(stats.acordeCoins || 0).toLocaleString()} <span className="text-[6px] opacity-30">Coins</span></span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="relative z-20 ml-2">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <i className="fa-solid fa-chevron-right text-white/10 text-xs"></i>
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto no-scrollbar pr-1 pb-2">
-                          {loadingMission ? (
-                            <div className="flex items-center justify-center py-8 bg-white/5 rounded-2xl border border-white/10">
-                              <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                            </div>
-                          ) : dailyMissions.length > 0 ? (
-                            dailyMissions.map((mission) => (
-                              <div
-                                key={mission.id}
-                                onClick={() => setSelectedMissionId(selectedMissionId === mission.id ? null : mission.id)}
-                                className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex flex-col gap-2 cursor-pointer ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'} ${selectedMissionId === mission.id ? 'ring-2 ring-orange-500/30' : ''}`}
-                              >
-                                <div className="flex items-center justify-between gap-4 w-full">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
-                                        Recompensa Sorteada
-                                      </span>
-                                      {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
-                                    </div>
-                                    <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
+                        {/* BARRA DE PROGRESSO DO NÍVEL ATUAL */}
+                        <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-orange-500 rounded-full transition-all duration-1000"
+                            style={{ width: `${getNextLevelProgress(stats.accumulatedXP || 0)}%` }}
+                          />
+                        </div>
 
-                                    <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                      <div
-                                        className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
-                                        style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
-                                      />
+                        {/* ÁREA DE MISSÕES DIÁRIAS (5 MISSÕES) */}
+                        <div className="w-full flex flex-col gap-2 mt-4">
+                          <div className="flex items-center justify-between px-1">
+                            <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">Missões do Dia</span>
+                            <span className="text-[8px] font-black text-orange-500 uppercase">{dailyMissions.filter(m => m.is_completed).length} / 5</span>
+                          </div>
+
+                          <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto no-scrollbar pr-1 pb-2">
+                            {loadingMission ? (
+                              <div className="flex items-center justify-center py-8 bg-white/5 rounded-2xl border border-white/10">
+                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                              </div>
+                            ) : dailyMissions.length > 0 ? (
+                              dailyMissions.map((mission) => (
+                                <div
+                                  key={mission.id}
+                                  onClick={() => setSelectedMissionId(selectedMissionId === mission.id ? null : mission.id)}
+                                  className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex flex-col gap-2 cursor-pointer ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'} ${selectedMissionId === mission.id ? 'ring-2 ring-orange-500/30' : ''}`}
+                                >
+                                  <div className="flex items-center justify-between gap-4 w-full">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
+                                          Recompensa Sorteada
+                                        </span>
+                                        {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
+                                      </div>
+                                      <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
+
+                                      <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                        <div
+                                          className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
+                                          style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
+                                        />
+                                      </div>
+                                      <div className="flex justify-between mt-1">
+                                        <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
+                                          {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div className="flex justify-between mt-1">
-                                      <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
-                                        {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
-                                      </span>
-                                    </div>
+
+                                    {mission.is_completed && !mission.reward_claimed ? (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); openClef(mission.id); }}
+                                        className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
+                                      >
+                                        Abrir
+                                      </button>
+                                    ) : mission.reward_claimed ? (
+                                      <div className="opacity-30">
+                                        <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
+                                      </div>
+                                    ) : (
+                                      <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
+                                        <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
+                                      </div>
+                                    )}
                                   </div>
 
-                                  {mission.is_completed && !mission.reward_claimed ? (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); openClef(mission.id); }}
-                                      className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
-                                    >
-                                      Abrir
-                                    </button>
-                                  ) : mission.reward_claimed ? (
-                                    <div className="opacity-30">
-                                      <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
-                                    </div>
-                                  ) : (
-                                    <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
-                                      <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
+                                  {selectedMissionId === mission.id && (
+                                    <div className="border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top duration-300">
+                                      <p className="text-[9px] text-white/50 font-medium leading-relaxed uppercase tracking-wider">{mission.description}</p>
                                     </div>
                                   )}
                                 </div>
-
-                                {selectedMissionId === mission.id && (
-                                  <div className="border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top duration-300">
-                                    <p className="text-[9px] text-white/50 font-medium leading-relaxed uppercase tracking-wider">{mission.description}</p>
-                                  </div>
-                                )}
+                              ))
+                            ) : (
+                              <div className="text-center py-6 bg-white/5 rounded-2xl border border-white/10">
+                                <p className="text-[8px] text-white/20 font-black uppercase">Buscando missões...</p>
                               </div>
-                            ))
-                          ) : (
-                            <div className="text-center py-6 bg-white/5 rounded-2xl border border-white/10">
-                              <p className="text-[8px] text-white/20 font-black uppercase">Buscando missões...</p>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div >
-      )}
-
-      {
-        gameState === GameState.PLAYING && (
-          <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative">
-            <button
-              onClick={endGame}
-              className="absolute top-6 right-4 z-50 px-3 py-1.5 bg-black/40 text-red-500 border border-red-500/20 rounded-xl text-[7px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2 backdrop-blur-md shadow-lg"
-            >
-              <i className="fa-solid fa-flag-checkered text-[9px]"></i> Encerrar Partida
-            </button>
-
-            <div className="flex justify-between items-center mb-2 relative pt-12">
-              {/* Overlay de Missões (Mini) */}
-              <div className="absolute top-24 left-0 right-0 flex justify-center gap-2 pointer-events-none z-10 px-4 scale-90 sm:scale-100">
-                {dailyMissions.filter(m => !m.is_completed).slice(0, 2).map(m => {
-                  let currentProgress = 0;
-                  switch (m.goal_type) {
-                    case 'bemol_count': currentProgress = missionProgress.bemol; break;
-                    case 'sustenido_count': currentProgress = missionProgress.sustenido; break;
-                    case 'minor_count': currentProgress = missionProgress.minor; break;
-                    case 'max_combo': currentProgress = missionProgress.maxCombo; break;
-                    case 'session_xp': currentProgress = sessionXP; break;
-                    case 'perfect_sequence': currentProgress = missionProgress.perfectCount; break;
-                  }
-                  return (
-                    <div key={m.id} className="bg-black/80 backdrop-blur-xl p-3 rounded-xl border border-white/10 shadow-2xl animate-in slide-in-from-top duration-500 w-44">
-                      <div className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-tight mb-1 truncate">{m.title}</div>
-                      <div className="flex items-center justify-between mt-1 gap-2">
-                        <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                          <div
-                            className="h-full bg-orange-500 transition-all duration-500 rounded-full"
-                            style={{ width: `${Math.min(100, (currentProgress / m.goal_value) * 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-[9px] font-black text-white tabular-nums shrink-0">{currentProgress}/{m.goal_value}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex flex-col relative">
-                <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Tempo</span>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xl font-black tabular-nums transition-all ${timeLeft < 10 ? 'text-red-500 animate-pulse scale-110' : ''}`}> {formatTime(timeLeft)} </span>
-                  {timeAdded && <span className="absolute -right-8 top-4 text-green-400 font-black text-xs animate-bounce"> +{timeAdded}s </span>}
-                </div>
-              </div>
-              <div className="text-center bg-black/30 px-4 py-1 rounded-full border border-white/10 flex flex-col items-center">
-                <span className="text-[8px] font-black opacity-40 uppercase tracking-widest block">Nível</span>
-                <span className="text-lg font-black text-orange-400">{currentLevel}</span>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="text-[8px] font-black opacity-40 uppercase tracking-widest">Ranking Pontos</span>
-                <span className="text-xl font-black tabular-nums text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.3)]">{score.toLocaleString()}</span>
-              </div>
-            </div>
-            <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden mb-4 border border-white/10 relative">
-              <div className={`h-full transition-all duration-500 ease-out flex items-center justify-end px-2 ${isOnFire ? 'fire-effect bg-gradient-to-r from-yellow-400 via-orange-500 to-red-600' : 'bg-gradient-to-r from-orange-400 to-orange-600'} ${isGlowing ? 'glow-pulse' : ''}`} style={{ width: `${progressPercentage}%`, boxShadow: isGlowing ? `0 0 ${glowIntensity}px rgba(249,115,22,0.8)` : 'none' }}>
-                {combo >= 2 && <span className="text-[6px] font-black text-white/80 whitespace-nowrap drop-shadow-md"> {combo} COMBO! </span>}
-              </div>
-            </div>
-            <div className="flex-1 flex flex-col items-center justify-center relative min-h-0">
-              <div className={`text-[100px] sm:text-[140px] md:text-[180px] font-black tracking-tighter transition-transform duration-300 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${feedback ? 'scale-110' : 'scale-100'} ${feedback?.type === 'wrong' ? 'shake text-red-500' : 'text-white'}`}> {chordsPool[currentIndex]?.symbol} </div>
-              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                {feedback && (
-                  <div className={`px-8 py-4 rounded-[28px] text-lg font-black uppercase tracking-widest pop-in shadow-[0_20px_50px_rgba(0,0,0,0.4)] flex flex-col items-center border-[3px] z-50 ${feedback.type === 'correct' ? 'bg-green-500 text-white border-green-400' : 'bg-white text-red-600 border-red-200'}`}>
-                    {feedback.type === 'correct' ? (<div className="flex items-center gap-2"> <i className="fa-solid fa-fire text-yellow-300"></i> <span>PERFEITO! {combo > 1 ? `x${combo}` : ''}</span> </div>) : (<div className="flex flex-col items-center"> <span className="text-[10px] opacity-60 mb-1">ERRADO! RESPOSTA:</span> <span className="text-2xl leading-none">{feedback.note}</span> </div>)}
+                    )}
                   </div>
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {currentOptions.map((opt, i) => (<NoteButton key={`${currentIndex}-${i}-${opt}`} note={opt} disabled={feedback !== null} onClick={handleAnswer} />))}
-            </div>
-          </div>
-        )
-      }
+          </div >
+        )}
 
-      {
-        gameState === GameState.GAMEOVER && (
-          <div className="w-full h-full max-h-screen flex flex-col items-center justify-between p-6 bg-[#0a0a0a] pop-in overflow-hidden text-center pt-8 pb-8">
-            <div className="w-full">
-              <div className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Sessão Finalizada</div>
-              <h2 className="text-4xl font-black italic tracking-tighter">FIM DE <span className="text-orange-500">JOGO</span></h2>
-            </div>
-            <div className="w-full max-w-sm space-y-4">
-              <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-center flex flex-col items-center gap-1 shadow-inner">
-                <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Sua Pontuação</span>
-                <span className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.4)] mb-4">{score.toLocaleString()}</span>
+        {gameState === GameState.PLAYING && (
+          <div className="w-full h-full max-h-screen flex flex-col p-4 overflow-hidden relative font-medieval">
 
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5 flex flex-col items-center">
-                    <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Patente XP</span>
-                    <span className="text-xl font-black text-blue-400">+{sessionXP}</span>
+            {/* BOSS INTRO OVERLAY */}
+            {showBossIntro && (
+              <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm px-6">
+                <div className="relative mb-12 animate-float flex flex-col items-center">
+                  <div className="speech-bubble px-6 py-4 mb-16 max-w-[280px] text-center animate-slide-up shadow-2xl">
+                    <span className="text-stone-900 font-medieval text-sm font-bold italic leading-relaxed">
+                      "{bossPhrase}"
+                    </span>
                   </div>
-                  <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5 flex flex-col items-center">
-                    <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Coins Ganhos</span>
-                    <span className="text-xl font-black text-yellow-500">+{Math.floor(sessionXP * 0.1)}</span>
+                  <div className="relative">
+                    <img
+                      src={currentArena.boss.image}
+                      className="w-64 h-64 object-contain pixelated drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]"
+                      alt="Boss Intro"
+                    />
+                    <div className="absolute inset-0 bg-white/5 animate-pulse rounded-full blur-3xl -z-10" />
                   </div>
                 </div>
-                <div className="w-full mt-3 bg-black/30 rounded-2xl p-4 text-center border border-white/5">
-                  <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Nível Final</span>
-                  <span className="text-xl font-black text-orange-400">LEVEL {currentLevel}</span>
+                <div className="text-center">
+                  <h2 className="text-white font-medieval text-2xl font-black uppercase tracking-[0.2em] mb-2 text-shadow-lg">
+                    {currentArena.boss.name}
+                  </h2>
+                  <div className="h-1 w-32 bg-red-600 mx-auto rounded-full animate-width" />
                 </div>
               </div>
+            )}
 
-              <div className="w-full space-y-3">
-                <button onClick={() => startNewGame(mode)} className="w-full bg-orange-500 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700 uppercase"> Jogar Novamente </button>
-                <button onClick={() => setGameState(GameState.MENU)} className="w-full bg-white/10 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all border-b-4 border-white/5 uppercase"> Voltar ao Menu </button>
-                <button
-                  onClick={() => setGameState(GameState.RANKING)}
-                  disabled={isSavingScore}
-                  className={`w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2 ${isSavingScore ? 'opacity-50' : ''}`}
+            {/* STATS BAR (TOP) */}
+            <div className="w-full flex justify-between items-center z-20 py-3 px-4 bg-stone-950 border-b-2 border-stone-800 shadow-2xl">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black uppercase text-blue-400 tracking-tighter">Energia</span>
+                <div className="w-24 h-2.5 bg-black/60 rounded-full border border-stone-800 overflow-hidden">
+                  <div className="h-full bg-blue-500 transition-all duration-300 shadow-[0_0_8px_rgba(59,130,246,0.6)]" style={{ width: `${playerHP}%` }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <span className="text-[10px] font-black text-white/40 uppercase block">Tempo</span>
+                  <span className={`text-base font-black tabular-nums transition-all ${timeLeft < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{formatTime(timeLeft)}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-[10px] font-black text-yellow-600/60 uppercase block font-medieval">Arena</span>
+                  <span className="text-sm font-black text-yellow-500 uppercase tracking-tighter">{currentArena.id}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-[10px] font-black text-orange-600/60 uppercase block">XP</span>
+                  <span className="text-base font-black text-orange-400">+{sessionXP}</span>
+                </div>
+              </div>
+              <button
+                onClick={endGame}
+                className="w-10 h-10 flex items-center justify-center bg-red-950/40 text-red-500 rounded-xl active:scale-90 border-2 border-red-900/30 transition-all hover:bg-red-900/60"
+              >
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-start relative pt-4">
+              {/* PROJECTILES LAYER */}
+              {projectiles.map(p => (
+                <div
+                  key={p.id}
+                  className={`absolute z-[60] pointer-events-none animate-projectile ${p.isSpecial ? 'w-24 h-24' : 'w-12 h-12'}`}
+                  style={{
+                    bottom: '220px',
+                    left: '50%',
+                    '--start-x': `${p.x}px`,
+                    '--start-y': `${p.y}px`
+                  } as any}
                 >
-                  {isSavingScore ? (
-                    <><div className="w-3 h-3 border-2 border-yellow-500/20 border-t-yellow-500 rounded-full animate-spin"></div> Salvando...</>
-                  ) : (
-                    <><i className="fa-solid fa-trophy"></i> Ranking Semanal</>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
-
-      {gameState === GameState.RANKING && (<RankingBoard onBack={() => setGameState(GameState.MENU)} />)}
-
-      {
-        gameState === GameState.STORE && (
-          <CardStore
-            onBack={() => setGameState(GameState.MENU)}
-            acordeCoins={stats.acordeCoins}
-            onXPUpdate={(newXP) => setStats(prev => ({ ...prev, acordeCoins: newXP }))}
-            accumulatedXP={stats.accumulatedXP || 0}
-            selectedCardId={stats.selectedCardId}
-            onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
-          />
-        )
-      }
-
-      {
-        showClefOpening && clefReward && (
-          <ClefOpeningModal
-            reward={clefReward}
-            onClose={() => {
-              setShowClefOpening(false);
-              setClefReward(null);
-            }}
-          />
-        )
-      }
-
-      {
-        showChangelog && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-[40px] p-8 relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden text-center">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-amber-500"></div>
-              <button onClick={closeChangelog} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
-                <i className="fa-solid fa-xmark text-xl"></i>
-              </button>
-              <div className="mb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Proteção de Dados</span>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.5.0</span></h2>
-              </div>
-              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-                    <i className="fa-solid fa-key text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Resgate de Conta (PIN)</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Agora você pode mover seu progresso entre Safari, Chrome ou o Ícone. Basta usar seu **Nome + PIN** (visível no seu perfil).</p>
-                  </div>
+                  <div className={`w-full h-full rounded-full ${p.isSpecial ? 'bg-amber-400 shadow-[0_0_50px_#fbbf24]' : 'bg-cyan-400 shadow-[0_0_25px_#22d3ee]'} animate-pulse ring-2 ring-white/50`} />
                 </div>
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
-                    <i className="fa-solid fa-address-book text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nomes Permanentes</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">O ranking reseta os pontos todo domingo às 22h, mas seu nome continua na lista! A disputa por prestígio nunca para.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                    <i className="fa-solid fa-mobile-screen text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ícone de App Real</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Fixamos definitivamente o ícone na tela inicial. Remova o antigo e adicione de novo para ver a guitarra neon!</p>
-                  </div>
-                </div>
-              </div>
-              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">VAMOS NESSA!</button>
-            </div>
-          </div>
-        )
-      }
+              ))}
 
-      {
-        showPatentsModal && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in zoom-in duration-300 shadow-2xl">
-            <div className="w-full max-w-sm bg-neutral-900 border-2 border-white/10 rounded-[40px] p-8 relative shadow-2xl overflow-hidden">
-              <button onClick={() => setShowPatentsModal(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
-                <i className="fa-solid fa-xmark text-xl"></i>
-              </button>
-              <div className="mb-8 text-center sm:text-left">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Hierarquia Musical</span>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">PATENTES</h2>
-                <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-2 px-1">Seu XP Total desbloqueia novos títulos</p>
-              </div>
-              <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar text-left">
-                {[
-                  { name: 'Iniciante', xp: 0, style: 'text-white/40', bg: 'bg-white/5' },
-                  { name: 'Estudante', xp: 5000, style: 'text-orange-400', bg: 'bg-orange-400/10' },
-                  { name: 'Avançado', xp: 15000, style: 'text-blue-400', bg: 'bg-blue-400/10' },
-                  { name: 'Solista', xp: 30000, style: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-                  { name: 'Virtuoso', xp: 50000, style: 'text-cyan-400', bg: 'bg-cyan-400/10' },
-                  { name: 'Mestre', xp: 75000, style: 'text-purple-400', bg: 'bg-purple-400/10' },
-                  { name: 'Lenda', xp: 100000, style: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-                ].reverse().map((p, i) => (
-                  <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border border-white/5 ${p.bg}`}>
-                    <span className={`font-black uppercase tracking-widest text-[11px] ${p.style}`}>{p.name}</span>
-                    <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-bolt text-[10px] text-orange-500 opacity-50"></i>
-                      <span className="text-white font-black tabular-nums text-xs">{p.xp.toLocaleString()} <span className="text-[8px] opacity-30">XP</span></span>
+              {/* BOSS AREA (CENTER-TOP) */}
+              <div className="w-full flex flex-col items-center justify-center gap-2 mt-4">
+                <div className="w-full max-w-[280px] mb-4">
+                  <div className="w-full h-5 bg-stone-950 rounded-full border-2 border-stone-700 overflow-hidden relative shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+                    <div className={`h-full bg-gradient-to-r ${bossHP <= 0 ? 'from-stone-600 to-stone-800' : 'from-red-600 via-red-500 to-rose-400'} rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]`} style={{ width: `${Math.max(0, bossHP)}%` }} />
+                    <div className="absolute inset-x-0 top-0 h-full flex items-center justify-between px-3">
+                      <span className="text-[10px] font-black text-white uppercase tracking-wider drop-shadow-md">{currentArena.boss.name}</span>
+                      <span className="text-[10px] font-black text-white drop-shadow-md">{Math.ceil(bossHP)}%</span>
+                    </div>
+                    {/* Tick marks for HP bar */}
+                    <div className="absolute inset-0 flex justify-evenly pointer-events-none opacity-20">
+                      {[1, 2, 3, 4].map(i => <div key={i} className="w-[1px] h-full bg-white" />)}
                     </div>
                   </div>
+                </div>
+
+                <div className="relative">
+                  {/* BOSS REACTION SPEECH BUBBLE (Moved outside to avoid grayscale) */}
+                  {bossReactionSpeech && (
+                    <div className="absolute -top-20 left-1/2 -translate-x-1/2 z-[70] animate-bounce w-[90vw] max-w-[200px] flex justify-center pointer-events-none">
+                      <div className="bg-white px-3 py-2 rounded-xl border-4 border-stone-800 shadow-2xl relative w-full text-center">
+                        <p className="text-stone-900 font-black text-[10px] leading-tight text-center italic drop-shadow-sm break-words whitespace-normal">"{bossReactionSpeech}"</p>
+                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-[10px] border-transparent border-t-stone-800" />
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-8 border-transparent border-t-white" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`relative w-64 h-64 transition-all duration-300 ${bossStatus === 'taking-damage' ? 'animate-shake damage-flash scale-95' : bossStatus === 'attacking' ? 'scale-110' : 'scale-100'} ${(bossHP <= 0 && !showBossVictory) ? 'opacity-0 scale-0' : (bossHP <= 0 ? 'grayscale opacity-50' : '')}`}>
+                    <img src={currentArena.boss.image} className="w-full h-full object-contain object-bottom pixelated" style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.8))' }} />
+                    {bossStatus === 'taking-damage' && <div className="absolute inset-0 bg-white/30 mix-blend-overlay animate-pulse rounded-full blur-3xl" />}
+                  </div>
+                </div>
+              </div>
+
+              {/* CHORD DISPLAY (CENTER-BOTTOM) */}
+              <div className="flex-1 flex flex-col items-center justify-center -mt-6">
+                <div className={`text-8xl font-black tracking-tighter transition-all duration-500 drop-shadow-[0_10px_30px_rgba(0,0,0,0.5)] ${isSpecialCharged ? 'text-yellow-400 scale-110 special-glow' : feedback?.type === 'wrong' ? 'shake text-red-500' : 'text-white'}`}>
+                  {chordsPool[currentIndex]?.symbol}
+                </div>
+                {isSpecialCharged && (
+                  <div className="mt-4 animate-bounce bg-yellow-400 text-black px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-[0_0_20px_#fbbf24]">
+                    ATAQUE ESPECIAL PRONTO!
+                  </div>
+                )}
+              </div>
+
+              <div className="absolute top-24 right-4 pointer-events-none z-50">
+                {feedback && feedback.type === 'wrong' && (
+                  <div className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest pop-in shadow-2xl flex flex-col items-center border-2 bg-white text-red-600 border-red-200">
+                    <span className="text-[8px] opacity-60 mb-0.5">ERROU!</span>
+                    <span className="text-lg leading-none font-sans">{feedback.note}</span>
+                  </div>
+                )}
+                {bossHP <= 0 && (
+                  <div className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest pop-in shadow-2xl flex flex-col items-center border-2 bg-yellow-500 text-black border-yellow-300 font-medieval">
+                    <i className="fa-solid fa-crown animate-bounce mb-1"></i>
+                    <span>VITÓRIA!</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* MISSIONS DYNAMIC NOTIFICATION - Moved to bottom to avoid overlapping with boss bubbles */}
+            <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] pointer-events-none">
+              {dailyMissions.filter(m => m.id === activeMissionNotifId).map(m => {
+                let currentProgress = 0;
+                switch (m.goal_type) {
+                  case 'bemol_count': currentProgress = missionProgress.bemol; break;
+                  case 'sustenido_count': currentProgress = missionProgress.sustenido; break;
+                  case 'minor_count': currentProgress = missionProgress.minor; break;
+                  case 'max_combo': currentProgress = missionProgress.maxCombo; break;
+                  case 'session_xp': currentProgress = sessionXP; break;
+                  case 'perfect_sequence': currentProgress = missionProgress.perfectCount; break;
+                }
+                return (
+                  <div key={m.id} className="bg-stone-900 shadow-2xl border-2 border-yellow-500/50 p-2 rounded-xl flex items-center gap-3 animate-slide-up min-w-[180px]">
+                    <i className="fa-solid fa-scroll text-yellow-500"></i>
+                    <div className="flex-1">
+                      <div className="text-[7px] font-black text-yellow-500 uppercase">{m.title}</div>
+                      <div className="text-[6px] text-white/50">{currentProgress}/{m.goal_value}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* COMBO & CONTROLS */}
+            <div className="w-full flex flex-col gap-4 mt-auto pb-4">
+              <div className="w-full h-5 bg-stone-900/80 rounded-xl overflow-hidden border-2 border-stone-700 relative shadow-inner">
+                <div
+                  className={`h-full transition-all duration-500 ease-out flex items-center justify-end px-3 ${isOnFire ? 'bg-gradient-to-r from-orange-600 via-red-600 to-red-800 animate-pulse' : `bg-gradient-to-r ${currentArena.colors.primary}`}`}
+                  style={{ width: `${progressPercentage}%` }}
+                >
+                  {combo >= 2 && <span className="text-[8px] font-medieval font-black text-white/90 tracking-[0.2em]"> {combo} COMBO </span>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {currentOptions.map((opt, i) => (
+                  <NoteButton
+                    key={`${currentIndex}-${i}-${opt}`}
+                    note={opt}
+                    disabled={feedback !== null}
+                    onClick={handleAnswer}
+                    extraClass={feedback === null
+                      ? `${currentArena.colors.button} rounded-2xl p-6 text-3xl font-medieval active:translate-y-[4px] active:shadow-none transition-all hover:brightness-110 border-2`
+                      : 'opacity-30 grayscale'}
+                  />
                 ))}
               </div>
-              <button onClick={() => setShowPatentsModal(false)} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-95 transition-all shadow-xl">FECHAR LISTA</button>
             </div>
           </div>
-        )
-      }
-    </div >
+        )}
+
+        {
+          gameState === GameState.GAMEOVER && (
+            <div className="w-full h-full max-h-screen flex flex-col items-center justify-between p-6 bg-[#0a0a0a] pop-in overflow-hidden text-center pt-8 pb-8">
+              <div className="w-full">
+                <div className="text-white/30 text-[10px] font-black uppercase tracking-[0.4em] mb-2">Sessão Finalizada</div>
+                <h2 className="text-4xl font-black italic tracking-tighter">FIM DE <span className="text-orange-500">JOGO</span></h2>
+              </div>
+              <div className="w-full max-w-sm space-y-4">
+                <div className="bg-white/5 rounded-3xl p-6 border border-white/10 text-center flex flex-col items-center gap-1 shadow-inner">
+                  <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Sua Pontuação</span>
+                  <span className="text-6xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.4)] mb-4">{score.toLocaleString()}</span>
+
+                  <div className="grid grid-cols-2 gap-3 w-full">
+                    <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5 flex flex-col items-center">
+                      <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Patente XP</span>
+                      <span className="text-xl font-black text-blue-400">+{sessionXP}</span>
+                    </div>
+                    <div className="bg-black/30 rounded-2xl p-4 text-center border border-white/5 flex flex-col items-center">
+                      <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Coins Ganhos</span>
+                      <span className="text-xl font-black text-yellow-500">+{Math.floor(sessionXP * 0.1)}</span>
+                    </div>
+                  </div>
+                  <div className="w-full mt-3 bg-black/30 rounded-2xl p-4 text-center border border-white/5">
+                    <span className="text-[8px] font-black opacity-40 block uppercase mb-1 tracking-widest">Nível Final</span>
+                    <span className="text-xl font-black text-orange-400">LEVEL {currentLevel}</span>
+                  </div>
+                </div>
+
+                <div className="w-full space-y-3">
+                  <button onClick={() => startNewGame(mode)} className="w-full bg-orange-500 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all shadow-2xl border-b-4 border-orange-700 uppercase"> Jogar Novamente </button>
+                  <button onClick={() => setGameState(GameState.MENU)} className="w-full bg-white/10 text-white font-black p-4 rounded-2xl text-lg active:scale-95 transition-all border-b-4 border-white/5 uppercase"> Voltar ao Menu </button>
+                  <button
+                    onClick={() => setGameState(GameState.RANKING)}
+                    disabled={isSavingScore}
+                    className={`w-full py-2 text-yellow-500 font-bold uppercase tracking-widest text-[10px] active:scale-95 transition-all flex items-center justify-center gap-2 ${isSavingScore ? 'opacity-50' : ''}`}
+                  >
+                    {isSavingScore ? (
+                      <><div className="w-3 h-3 border-2 border-yellow-500/20 border-t-yellow-500 rounded-full animate-spin"></div> Salvando...</>
+                    ) : (
+                      <><i className="fa-solid fa-trophy"></i> Ranking Semanal</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        {gameState === GameState.RANKING && (<RankingBoard onBack={() => setGameState(GameState.MENU)} />)}
+
+        {
+          gameState === GameState.STORE && (
+            <CardStore
+              onBack={() => setGameState(GameState.MENU)}
+              acordeCoins={stats.acordeCoins}
+              onXPUpdate={(newXP) => setStats(prev => ({ ...prev, acordeCoins: newXP }))}
+              accumulatedXP={stats.accumulatedXP || 0}
+              selectedCardId={stats.selectedCardId}
+              onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
+              unlockedArenaId={stats.unlockedArenaId || 1}
+              onPlayStory={(id) => setActiveStoryId(id)}
+            />
+          )
+        }
+
+        {
+          showClefOpening && clefReward && (
+            <ClefOpeningModal
+              reward={clefReward}
+              onClose={() => {
+                setShowClefOpening(false);
+                setClefReward(null);
+              }}
+            />
+          )
+        }
+
+        {
+          activeStoryId !== null && (
+            <StoryModal
+              arenaId={activeStoryId}
+              onClose={() => {
+                const newSeen = [...(stats.seenStoryIds || []), activeStoryId];
+                setStats(prev => ({ ...prev, seenStoryIds: newSeen }));
+
+                // Persistir no Banco
+                const deviceId = getDeviceId();
+                supabase.rpc('mark_story_seen', {
+                  device_id_param: deviceId,
+                  story_id: activeStoryId
+                });
+
+                setActiveStoryId(null);
+                if (gameState !== GameState.STORE) {
+                  startNewGame(mode);
+                }
+              }}
+            />
+          )
+        }
+
+        {
+          activeDialogue && (
+            <DialogueOverlay
+              interaction={activeDialogue}
+              bossName={currentArena.boss.name}
+              bossImage={currentArena.boss.image}
+              onContinue={() => setActiveDialogue(null)}
+            />
+          )
+        }
+
+        {
+          showBossVictory && (
+            <BossVictoryModal
+              bossName={currentArena.boss.name}
+              nextArenaName={ARENAS.find(a => a.id === currentArena.id + 1)?.name.replace(/Arena [IV]+: /, '') || 'Próxima Arena'}
+              hasNextArena={!!ARENAS.find(a => a.id === currentArena.id + 1)}
+              onContinue={() => {
+                setShowBossVictory(false);
+                // Resume timer
+                if (timerRef.current) clearInterval(timerRef.current); // safe clear
+                timerRef.current = setInterval(() => {
+                  setTimeLeft(prev => prev <= 1 ? 0 : prev - 1);
+                }, 1000);
+              }}
+              onAdvance={handleBossDefeatedAdvance}
+            />
+          )
+        }
+
+        {
+          showChangelog && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+              <div className="w-full max-w-md bg-neutral-900 border border-white/10 rounded-[40px] p-8 relative shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden text-center">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-500 to-amber-500"></div>
+                <button onClick={closeChangelog} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+                  <i className="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <div className="mb-8">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Proteção de Dados</span>
+                  <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">STORY <span className="text-yellow-500">MODE</span></h2>
+                </div>
+                <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                      <i className="fa-solid fa-book text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Modo História Liberado!</h4>
+                      <p className="text-[11px] text-white/50 leading-relaxed">Agora cada arena tem sua própria narrativa cinematográfica. Descubra os segredos por trás do Lorde Silêncio.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                      <i className="fa-solid fa-key text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Sincronização Total</h4>
+                      <p className="text-[11px] text-white/50 leading-relaxed">Seu progresso de arenas e história agora é salvo na nuvem via PIN.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
+                      <i className="fa-solid fa-shield-halved text-xl"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Segurança V5</h4>
+                      <p className="text-[11px] text-white/50 leading-relaxed">Ranking e pontuações protegidas contra manipulação com validação de servidor.</p>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">VAMOS NESSA!</button>
+              </div>
+            </div>
+          )
+        }
+
+        {
+          showPatentsModal && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-in zoom-in duration-300 shadow-2xl">
+              <div className="w-full max-w-sm bg-neutral-900 border-2 border-white/10 rounded-[40px] p-8 relative shadow-2xl overflow-hidden">
+                <button onClick={() => setShowPatentsModal(false)} className="absolute top-6 right-6 w-10 h-10 flex items-center justify-center bg-white/5 rounded-full text-white/40 hover:text-white transition-colors">
+                  <i className="fa-solid fa-xmark text-xl"></i>
+                </button>
+                <div className="mb-8 text-center uppercase">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-500 mb-2 block">Hierarquia Musical</span>
+                  <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">PATENTES</h2>
+                  <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mt-2 px-1">Seu XP Total desbloqueia novos títulos</p>
+                </div>
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-2 no-scrollbar text-left">
+                  {[
+                    { name: 'Iniciante', xp: 0, style: 'text-white/40', bg: 'bg-white/5' },
+                    { name: 'Estudante', xp: 5000, style: 'text-orange-400', bg: 'bg-orange-400/10' },
+                    { name: 'Avançado', xp: 15000, style: 'text-blue-400', bg: 'bg-blue-400/10' },
+                    { name: 'Solista', xp: 30000, style: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+                    { name: 'Virtuoso', xp: 50000, style: 'text-cyan-400', bg: 'bg-cyan-400/10' },
+                    { name: 'Mestre', xp: 75000, style: 'text-purple-400', bg: 'bg-purple-400/10' },
+                    { name: 'Lenda', xp: 100000, style: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+                  ].reverse().map((p, i) => (
+                    <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border border-white/5 ${p.bg}`}>
+                      <span className={`font-black uppercase tracking-widest text-[11px] ${p.style}`}>{p.name}</span>
+                      <div className="flex items-center gap-2">
+                        <i className="fa-solid fa-bolt text-[10px] text-orange-500 opacity-50"></i>
+                        <span className="text-white font-black tabular-nums text-xs">{p.xp.toLocaleString()} <span className="text-[8px] opacity-30">XP</span></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => setShowPatentsModal(false)} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-xs uppercase tracking-widest active:scale-95 transition-all shadow-xl">FECHAR LISTA</button>
+              </div>
+            </div>
+          )}
+      </div>
+    </div>
   );
 };
 

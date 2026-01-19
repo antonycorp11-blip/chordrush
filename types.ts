@@ -14,6 +14,8 @@ export interface GameStats {
   accumulatedXP: number; // XP de Patente (acumulado da vida)
   selectedCardId?: string;
   recoveryPin?: string;
+  unlockedArenaId?: number; // Identificador da maior arena desbloqueada (Inicia em 1)
+  seenStoryIds?: number[]; // IDs das histórias já visualizadas
 }
 
 export interface Mission {
@@ -54,6 +56,7 @@ export interface RankingEntry {
   selected_card_id?: string;
   acorde_coins: number;             // Saldo
   accumulated_xp: number;       // Patente XP
+  unlocked_arena_id?: number;   // Progressive Arena Lock
   created_at: string;
   recovery_pin?: string;
 }

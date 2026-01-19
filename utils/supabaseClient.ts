@@ -14,7 +14,15 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export const getDeviceId = (): string => {
   let deviceId = localStorage.getItem('chordRush_deviceId');
   if (!deviceId) {
-    deviceId = crypto.randomUUID();
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      deviceId = crypto.randomUUID();
+    } else {
+      // Fallback simples para ambientes não seguros (HTTP IP local)
+      deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
     localStorage.setItem('chordRush_deviceId', deviceId);
   }
   return deviceId;
