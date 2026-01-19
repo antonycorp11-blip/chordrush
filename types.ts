@@ -13,6 +13,7 @@ export interface GameStats {
   acordeCoins: number;      // Saldo (para gastar na loja)
   accumulatedXP: number; // XP de Patente (acumulado da vida)
   selectedCardId?: string;
+  recoveryPin?: string;
 }
 
 export interface Mission {
@@ -54,6 +55,7 @@ export interface RankingEntry {
   acorde_coins: number;             // Saldo
   accumulated_xp: number;       // Patente XP
   created_at: string;
+  recovery_pin?: string;
 }
 
 export type Rarity = 'comum' | 'raro' | 'épico' | 'lendário';

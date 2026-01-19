@@ -30,7 +30,7 @@ const App: React.FC = () => {
         accumulatedXP: parsed.accumulatedXP || 0
       };
     }
-    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0 };
+    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0, recoveryPin: '' };
   });
 
   const [gameState, setGameState] = useState<GameState>(GameState.MENU);
@@ -51,6 +51,8 @@ const App: React.FC = () => {
   const [showPatentsModal, setShowPatentsModal] = useState(false);
   const [syncDone, setSyncDone] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryPinInput, setRecoveryPinInput] = useState('');
   const [dailyMissions, setDailyMissions] = useState<PlayerMission[]>([]);
   const [loadingMission, setLoadingMission] = useState(false);
   const [showClefOpening, setShowClefOpening] = useState(false);
@@ -88,7 +90,7 @@ const App: React.FC = () => {
         const deviceId = getDeviceId();
         const { data } = await supabase
           .from('players')
-          .select('name, selected_card_id, acorde_coins, accumulated_xp')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin')
           .eq('device_id', deviceId)
           .maybeSingle();
 
@@ -98,7 +100,8 @@ const App: React.FC = () => {
             playerName: data.name || prev.playerName,
             selectedCardId: data.selected_card_id,
             acordeCoins: (data.acorde_coins !== null && data.acorde_coins !== undefined) ? data.acorde_coins : prev.acordeCoins,
-            accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP
+            accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP,
+            recoveryPin: data.recovery_pin
           }));
 
           // Buscar missões diárias após o sync do perfil
@@ -110,7 +113,7 @@ const App: React.FC = () => {
         setSyncDone(true);
       }
 
-      const currentVersion = '7.4.5';
+      const currentVersion = '7.5.0';
       const lastSeen = localStorage.getItem('chordRush_version');
       if (lastSeen !== currentVersion) {
         setShowChangelog(true);
@@ -120,7 +123,7 @@ const App: React.FC = () => {
   }, []);
 
   const closeChangelog = () => {
-    localStorage.setItem('chordRush_version', '7.4.5');
+    localStorage.setItem('chordRush_version', '7.5.0');
     setShowChangelog(false);
   };
 
@@ -140,10 +143,65 @@ const App: React.FC = () => {
 
       if (error) throw error;
       setIsRenaming(false);
+
+      // Re-sincroniza para pegar o PIN gerado se for novo jogador
+      const { data: newData } = await supabase
+        .from('players')
+        .select('recovery_pin')
+        .eq('device_id', deviceId)
+        .maybeSingle();
+
+      if (newData) {
+        setStats(prev => ({ ...prev, recoveryPin: newData.recovery_pin }));
+      }
+
       return true;
     } catch (err) {
       console.error('Erro ao salvar perfil (Seguro):', err);
       return null;
+    }
+  };
+
+  const recoverAccount = async (name: string, pin: string) => {
+    const deviceId = getDeviceId();
+    try {
+      const { data, error } = await supabase.rpc('recover_player_account', {
+        p_name: name.toUpperCase().trim(),
+        p_pin: pin.trim(),
+        p_new_device_id: deviceId
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        alert('✅ Conta recuperada com sucesso!');
+        // Re-sincroniza tudo
+        const { data: profile } = await supabase
+          .from('players')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin')
+          .eq('device_id', deviceId)
+          .single();
+
+        if (profile) {
+          setStats({
+            playerName: profile.name,
+            selectedCardId: profile.selected_card_id,
+            highScore: 0,
+            acordeCoins: profile.acorde_coins,
+            accumulatedXP: profile.accumulated_xp,
+            recoveryPin: profile.recovery_pin
+          });
+        }
+        setIsRenaming(false);
+        return true;
+      } else {
+        alert('❌ Erro: ' + (data?.message || 'Falha na recuperação'));
+        return false;
+      }
+    } catch (err: any) {
+      console.error('Erro na recuperação:', err);
+      alert('Erro crítico: ' + err.message);
+      return false;
     }
   };
 
@@ -418,7 +476,7 @@ const App: React.FC = () => {
               </h1>
               <div className="flex flex-col items-center gap-1 mt-1">
                 <p className="text-orange-500 font-black tracking-[0.3em] text-[10px] uppercase">Master the Fretboard</p>
-                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.4.5</p>
+                <p className="text-white/20 font-black text-[9px] uppercase tracking-widest">Version 7.5.0</p>
               </div>
             </div>
 
@@ -427,7 +485,7 @@ const App: React.FC = () => {
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
                   <div className="space-y-2">
                     <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">
-                      {stats.playerName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?'}
+                      {isRecovering ? 'Digite seus dados de acesso' : (stats.playerName.length <= 1 ? 'Seu nome é muito curto' : 'Como quer ser chamado?')}
                     </p>
                     <input
                       type="text"
@@ -436,18 +494,51 @@ const App: React.FC = () => {
                       onChange={(e) => handleNameChange(e.target.value)}
                       className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10"
                     />
+                    {isRecovering && (
+                      <input
+                        type="tel"
+                        maxLength={4}
+                        placeholder="PIN (4 DÍGITOS)"
+                        value={recoveryPinInput}
+                        onChange={(e) => setRecoveryPinInput(e.target.value)}
+                        className="w-full bg-white/5 border-2 border-white/10 rounded-2xl p-5 text-center text-xl font-black uppercase focus:outline-none focus:border-white/30 transition-all placeholder:text-white/10 mt-2"
+                      />
+                    )}
                     <p className="text-[9px] text-white/20 text-center uppercase font-bold">Mínimo 2 caracteres</p>
                   </div>
-                  <button
-                    onClick={() => stats.playerName.trim().length >= 2 && savePlayerProfile()}
-                    disabled={stats.playerName.trim().length < 2}
-                    className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${stats.playerName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
-                  >
-                    CONFIRMAR NOME
-                  </button>
-                  {isRenaming && (
-                    <button onClick={() => setIsRenaming(false)} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
+
+                  {isRecovering ? (
+                    <button
+                      onClick={() => stats.playerName.trim().length >= 2 && recoveryPinInput.length === 4 && recoverAccount(stats.playerName, recoveryPinInput)}
+                      disabled={stats.playerName.trim().length < 2 || recoveryPinInput.length < 4}
+                      className={`w-full relative overflow-hidden bg-orange-500 text-white font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#c2410c] active:shadow-none active:translate-y-[8px] uppercase ${(stats.playerName.trim().length < 2 || recoveryPinInput.length < 4) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-orange-600'}`}
+                    >
+                      RESGATAR CONTA
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => stats.playerName.trim().length >= 2 && savePlayerProfile()}
+                      disabled={stats.playerName.trim().length < 2}
+                      className={`w-full relative overflow-hidden bg-white text-black font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_#d4d4d4] active:shadow-none active:translate-y-[8px] uppercase ${stats.playerName.trim().length < 2 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-neutral-100'}`}
+                    >
+                      CONFIRMAR NOME
+                    </button>
                   )}
+
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => {
+                        setIsRecovering(!isRecovering);
+                        setRecoveryPinInput('');
+                      }}
+                      className="w-full text-orange-500 text-[10px] font-black uppercase tracking-widest py-2 active:opacity-50"
+                    >
+                      {isRecovering ? 'Quero criar novo perfil' : 'Já jogo? Resgatar minha conta'}
+                    </button>
+                    {isRenaming && (
+                      <button onClick={() => setIsRenaming(false)} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-5 w-full">
@@ -529,6 +620,12 @@ const App: React.FC = () => {
                             <span className="font-black text-2xl text-white tracking-tight break-words pr-2 line-clamp-1 uppercase drop-shadow-lg">
                               {stats.playerName || '---'}
                             </span>
+                            {stats.recoveryPin && (
+                              <div className="bg-orange-500/20 px-2 py-1 rounded-lg border border-orange-500/30 flex items-center gap-1.5" title="Seu código de recuperação">
+                                <span className="text-[8px] font-black text-orange-500 uppercase tracking-tighter">PIN:</span>
+                                <span className="text-xs font-black text-white tracking-widest">{stats.recoveryPin}</span>
+                              </div>
+                            )}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -813,39 +910,39 @@ const App: React.FC = () => {
                 <i className="fa-solid fa-xmark text-xl"></i>
               </button>
               <div className="mb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Correções Estruturais</span>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.4.5</span></h2>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500 mb-2 block">Proteção de Dados</span>
+                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none text-white">UPDATE <span className="text-yellow-500">V7.5.0</span></h2>
               </div>
               <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar text-left text-white">
                 <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
-                    <i className="fa-solid fa-users text-xl"></i>
+                  <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
+                    <i className="fa-solid fa-key text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ranking Permanente</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Agora os nomes não somem no reset! Quem já jogou continua no ranking com 0 pontos até bater um novo recorde.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Resgate de Conta (PIN)</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Agora você pode mover seu progresso entre Safari, Chrome ou o Ícone. Basta usar seu **Nome + PIN** (visível no seu perfil).</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 flex-shrink-0 bg-yellow-500/10 rounded-2xl flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                    <i className="fa-solid fa-address-book text-xl"></i>
+                  </div>
+                  <div>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nomes Permanentes</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">O ranking reseta os pontos todo domingo às 22h, mas seu nome continua na lista! A disputa por prestígio nunca para.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="w-10 h-10 flex-shrink-0 bg-blue-500/10 rounded-2xl flex items-center justify-center text-blue-400 border border-blue-500/20">
-                    <i className="fa-solid fa-triangle-exclamation text-xl"></i>
+                    <i className="fa-solid fa-mobile-screen text-xl"></i>
                   </div>
                   <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Nota: Safari vs Chrome</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">No iPhone, se você mudar de navegador (ex: Safari para Chrome), o jogo cria um novo perfil. Escolha um e use sempre o mesmo para não perder o progresso.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-10 h-10 flex-shrink-0 bg-orange-500/10 rounded-2xl flex items-center justify-center text-orange-500 border border-orange-500/20">
-                    <i className="fa-solid fa-image text-xl"></i>
-                  </div>
-                  <div>
-                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ícone Premium</h4>
-                    <p className="text-[11px] text-white/50 leading-relaxed">Corrigimos o caminho do ícone. Remova o ícone antigo e adicione à tela de início novamente para ver o novo visual.</p>
+                    <h4 className="font-black text-xs uppercase tracking-widest text-white mb-1">Ícone de App Real</h4>
+                    <p className="text-[11px] text-white/50 leading-relaxed">Fixamos definitivamente o ícone na tela inicial. Remova o antigo e adicione de novo para ver a guitarra neon!</p>
                   </div>
                 </div>
               </div>
-              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">ENTENDIDO!</button>
+              <button onClick={closeChangelog} className="w-full mt-8 bg-white text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all shadow-xl">VAMOS NESSA!</button>
             </div>
           </div>
         )
