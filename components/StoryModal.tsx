@@ -60,14 +60,14 @@ const STORIES: Record<number, { title: string; text: string[]; color: string }> 
         ]
     },
     6: {
-        title: "O Eco do Vazio",
+        title: "A Ascensão do Silêncio",
         color: "text-red-500",
         text: [
-            "Com um último golpe de som puro, você atinge o núcleo de Lorde Silêncio.",
-            "Ele grita, não de dor, mas de fúria. Seu corpo de sombras começa a se dissipar, mas o vórtice atrás dele se abre.",
-            "'Isso não acabou!', ele ruge, sugando os restos de sua própria energia. 'Eu voltarei para silenciar tudo!'",
-            "Ele escapa para o Vazio Profundo, deixando Acordelot em ruínas, mas com uma faísca de esperança.",
-            "A música venceu a batalha... mas a guerra continua."
+            "A batalha foi intensa, mas o poder do Lorde Silêncio era vasto demais. Com um golpe final de dissonância, ele partiu sua última corda.",
+            "Lorde Silêncio ri enquanto desaparece nas sombras: 'Este mundo agora me pertence. A música é apenas uma memória moribunda'.",
+            "Ele fugiu após a vitória, e agora o Silêncio Absoluto tomou conta de cada rua e torre da outrora vibrante Acordelot.",
+            "Mas nem tudo está perdido. Você sobreviveu, e enquanto houver um sopro de ritmo em seu peito, a esperança resiste.",
+            "A história irá continuar... Agora, você deve seguir treinando e aprimorando sua técnica. A verdadeira batalha final ainda está por vir!"
         ]
     }
 };
