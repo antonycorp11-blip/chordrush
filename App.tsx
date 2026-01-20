@@ -102,6 +102,8 @@ const App: React.FC = () => {
   const [activeStoryId, setActiveStoryId] = useState<number | null>(null);
   const [showBossVictory, setShowBossVictory] = useState(false);
   const [victoryHandled, setVictoryHandled] = useState(false);
+  const [interferenceActive, setInterferenceActive] = useState<string | null>(null);
+  const [isGameCompleted, setIsGameCompleted] = useState(false);
 
   // Dialogue System State
   const [activeDialogue, setActiveDialogue] = useState<DialogueInteraction | null>(null);
@@ -485,7 +487,7 @@ const App: React.FC = () => {
         if (timeSinceLast > attackThreshold) {
           // BOSS ATACA!
           setPlayerHP(prev => {
-            const damage = 5 + (currentArena.id * 2);
+            const damage = 2 + (currentArena.id);
             const newHP = Math.max(0, prev - damage);
             if (newHP <= 0 && !isEndingRef.current) {
               setTimeout(() => endGame(), 100);
@@ -628,11 +630,15 @@ const App: React.FC = () => {
     });
     supabase.rpc('unlock_next_arena', {
       device_id_param: deviceId,
-      current_arena_id: stats.unlockedArenaId || 1
+      current_arena_id: nextId - 1 // Pass the arena that was just completed
     });
 
     // Trigger Story & New Game flow
-    setActiveStoryId(nextId);
+    if (nextId >= 6) {
+      setActiveStoryId(6); // Final desfecho story
+    } else {
+      setActiveStoryId(nextId);
+    }
   };
 
   const handleAnswer = (selectedNote: NoteName, clickX?: number, clickY?: number) => {
@@ -660,9 +666,13 @@ const App: React.FC = () => {
         if (Math.random() < 0.4) {
           setCurrentOptions(prev => shuffle([...prev]));
           setIsShaking(true);
-          setTimeout(() => setIsShaking(false), 600);
+          setInterferenceActive("BOTÕES EMBARALHADOS!");
+          setTimeout(() => {
+            setIsShaking(false);
+            setInterferenceActive(null);
+          }, 1200);
           setBossReactionSpeech("PRESTE ATENÇÃO!");
-          setTimeout(() => setBossReactionSpeech(null), 1000);
+          setTimeout(() => setBossReactionSpeech(null), 1500);
         }
         // Chance de trocar a nota alvo (30%)
         else if (Math.random() < 0.3) {
@@ -670,9 +680,13 @@ const App: React.FC = () => {
           setCurrentIndex(newIdx);
           setCurrentOptions(generateOptions(chordsPool[newIdx]));
           setIsShaking(true);
-          setTimeout(() => setIsShaking(false), 600);
+          setInterferenceActive("NOTA ALTERADA!");
+          setTimeout(() => {
+            setIsShaking(false);
+            setInterferenceActive(null);
+          }, 1200);
           setBossReactionSpeech("MUDE O TOM!");
-          setTimeout(() => setBossReactionSpeech(null), 1000);
+          setTimeout(() => setBossReactionSpeech(null), 1500);
         }
       }
 
@@ -885,6 +899,59 @@ const App: React.FC = () => {
       >
         {/* Overlay de Proteção para Legibilidade (Apenas no Jogo) */}
         {isPlaying && <div className="absolute inset-0 z-0 pointer-events-none bg-black/40" />}
+
+        {interferenceActive && (
+          <div className="absolute inset-0 z-[150] pointer-events-none flex flex-col items-center justify-center bg-purple-900/40 animate-pulse overflow-hidden">
+            <div className="text-white font-black text-4xl tracking-tighter uppercase mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] animate-bounce text-center px-6">
+              {interferenceActive}
+            </div>
+            <div className="flex gap-2">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="w-1 h-32 bg-white/20 animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {isPlaying && isGameCompleted && (
+          <div className="fixed inset-0 z-[250] bg-black flex flex-col items-center justify-center p-8 animate-in zoom-in duration-1000 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-purple-900/30 to-black pointer-events-none" />
+            <div className="relative z-10 flex flex-col items-center text-center">
+              <i className="fa-solid fa-guitar text-8xl text-yellow-500 mb-6 drop-shadow-[0_0_30px_rgba(250,204,21,0.5)] animate-bounce"></i>
+              <h1 className="text-5xl font-black italic tracking-tighter text-white uppercase leading-none mb-2 font-medieval">VITÓRIA GRANDIOSA!</h1>
+              <p className="text-yellow-500 font-orange-500 uppercase tracking-[0.4em] text-[10px] font-black mb-8">A Harmonia foi Restaurada</p>
+
+              <div className="space-y-4 max-w-xs text-center mb-10">
+                <p className="text-white/60 text-xs leading-relaxed italic">"O Lorde Silêncio foi banido para o Vazio. Através de seus dedos, a Sinfonia Perdida volta a ecoar nos corações de Acordelot."</p>
+              </div>
+
+              <div className="flex flex-col gap-3 w-full max-w-[280px]">
+                <button
+                  onClick={() => {
+                    setIsGameCompleted(false);
+                    setGameState(GameState.MENU);
+                  }}
+                  className="w-full bg-yellow-500 hover:bg-yellow-400 text-black font-black py-5 rounded-2xl text-lg uppercase tracking-widest active:scale-95 transition-all shadow-[0_8px_0_#a16207]"
+                >
+                  VOLTAR AO MENU
+                </button>
+                <p className="text-white/20 text-[8px] font-bold uppercase tracking-widest mt-4">Obrigado por jogar Chord Rush</p>
+              </div>
+            </div>
+
+            {/* Efeitos de Fundo */}
+            <div className="absolute inset-0 pointer-events-none">
+              {[...Array(20)].map((_, i) => (
+                <div key={i} className="absolute bg-yellow-500/20 w-1 h-1 rounded-full animate-float" style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 5}s`,
+                  animationDuration: `${3 + Math.random() * 5}s`
+                }} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {gameState === GameState.PLAYING && playerHP <= 0 && (
           <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-8 animate-in fade-in">
@@ -1488,8 +1555,12 @@ const App: React.FC = () => {
                   story_id: activeStoryId
                 });
 
+                const currentStoryId = activeStoryId;
                 setActiveStoryId(null);
-                if (gameState !== GameState.STORE) {
+
+                if (currentStoryId === 6) {
+                  setIsGameCompleted(true);
+                } else if (gameState !== GameState.STORE) {
                   startNewGame(mode);
                 }
               }}
