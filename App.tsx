@@ -45,6 +45,9 @@ const App: React.FC = () => {
     const xpArena = getCurrentArena(stats.accumulatedXP || 0);
     const unlockedId = stats.unlockedArenaId || 1;
 
+    // Se o jogador já tem XP de arenas superiores, permitimos que ele comece nela se o unlockedId estiver "atrasado"
+    // ou se ele preferir (neste caso, mantemos o Math.min para respeitar a progressão obrigatória de bater o boss,
+    // porem garantindo que o unlockedId seja persistido corretamente).
     const effectiveId = Math.min(xpArena.id, unlockedId);
     return ARENAS.find(a => a.id === effectiveId) || ARENAS[0];
   };
@@ -104,6 +107,9 @@ const App: React.FC = () => {
   const [activeDialogue, setActiveDialogue] = useState<DialogueInteraction | null>(null);
   const dialogueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastDialogueIdRef = useRef<string | null>(null);
+  const lastAttackTimeRef = useRef<number>(Date.now());
+  const [isShaking, setIsShaking] = useState(false);
+  const counterAttackTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Constants have been moved to ARENAS config.
   const bgmRef = useRef<HTMLAudioElement | null>(null);
@@ -170,24 +176,24 @@ const App: React.FC = () => {
     const syncProfile = async () => {
       try {
         const deviceId = getDeviceId();
-        const { data } = await supabase
+        const { data: profileData, error: syncError } = await supabase
           .from('players')
-          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids')
           .eq('device_id', deviceId)
           .maybeSingle();
 
-        if (data) {
+        if (profileData) {
           setStats(prev => ({
             ...prev,
-            playerName: data.name || prev.playerName,
-            selectedCardId: data.selected_card_id,
-            acordeCoins: (data.acorde_coins !== null && data.acorde_coins !== undefined) ? data.acorde_coins : prev.acordeCoins,
-            accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP,
-            recoveryPin: data.recovery_pin,
-            unlockedArenaId: data.unlocked_arena_id || prev.unlockedArenaId || 1,
-            seenStoryIds: data.seen_story_ids || prev.seenStoryIds || []
+            playerName: profileData.name || prev.playerName,
+            selectedCardId: profileData.selected_card_id,
+            acordeCoins: (profileData.acorde_coins !== null && profileData.acorde_coins !== undefined) ? profileData.acorde_coins : prev.acordeCoins,
+            accumulatedXP: (profileData.accumulated_xp !== null && profileData.accumulated_xp !== undefined) ? profileData.accumulated_xp : prev.accumulatedXP,
+            recoveryPin: profileData.recovery_pin,
+            unlockedArenaId: profileData.unlocked_arena_id || prev.unlockedArenaId || 1,
+            seenStoryIds: profileData.seen_story_ids || prev.seenStoryIds || []
           }));
-          if (!data.name) setShowNameModal(true);
+          if (!profileData.name) setShowNameModal(true);
           fetchDailyMissions();
         } else {
           setShowNameModal(true);
@@ -263,20 +269,22 @@ const App: React.FC = () => {
       if (data?.success) {
         alert('✅ Conta recuperada com sucesso!');
         // Re-sincroniza tudo
-        const { data: profile } = await supabase
+        const { data: recoveredProfile } = await supabase
           .from('players')
-          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids')
           .eq('device_id', deviceId)
-          .single();
+          .maybeSingle();
 
-        if (profile) {
+        if (recoveredProfile) {
           setStats({
-            playerName: profile.name,
-            selectedCardId: profile.selected_card_id,
+            playerName: recoveredProfile.name || '',
+            selectedCardId: recoveredProfile.selected_card_id,
             highScore: 0,
-            acordeCoins: profile.acorde_coins,
-            accumulatedXP: profile.accumulated_xp,
-            recoveryPin: profile.recovery_pin
+            acordeCoins: recoveredProfile.acorde_coins || 0,
+            accumulatedXP: recoveredProfile.accumulated_xp || 0,
+            recoveryPin: recoveredProfile.recovery_pin || '',
+            unlockedArenaId: recoveredProfile.unlocked_arena_id || 1,
+            seenStoryIds: recoveredProfile.seen_story_ids || []
           });
         }
         setIsRenaming(false);
@@ -391,6 +399,8 @@ const App: React.FC = () => {
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
 
     isEndingRef.current = false;
+    lastAttackTimeRef.current = Date.now();
+    setPlayerHP(100);
     setMode(selectedMode);
     setCurrentLevel(1);
     setTimeLeft(60);
@@ -456,14 +466,52 @@ const App: React.FC = () => {
       }
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (counterAttackTimerRef.current) clearInterval(counterAttackTimerRef.current);
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (counterAttackTimerRef.current) clearInterval(counterAttackTimerRef.current);
+    };
   }, [gameState, showBossIntro, activeDialogue]);
 
-  // EFEITO SEPARADO PARA O GATILHO DE DIÁLOGO REMOVIDO EM FAVOR DO GATILHO POR ATAQUE ESPECIAL
+  // EFEITO DE CONTRA-ATAQUE (BOSS BATE SE JOGADOR DEMORAR)
   useEffect(() => {
-    return () => { if (dialogueTimerRef.current) clearInterval(dialogueTimerRef.current); };
-  }, []);
+    if (gameState === GameState.PLAYING && !showBossIntro && !activeDialogue) {
+      counterAttackTimerRef.current = setInterval(() => {
+        const now = Date.now();
+        const timeSinceLast = now - lastAttackTimeRef.current;
+        const attackThreshold = currentArena.id === 5 ? 4000 : currentArena.id === 4 ? 3500 : 3000;
+
+        if (timeSinceLast > attackThreshold) {
+          // BOSS ATACA!
+          setPlayerHP(prev => {
+            const damage = 5 + (currentArena.id * 2);
+            const newHP = Math.max(0, prev - damage);
+            if (newHP <= 0 && !isEndingRef.current) {
+              setTimeout(() => endGame(), 100);
+            }
+            return newHP;
+          });
+
+          setBossStatus('attacking');
+          setIsShaking(true);
+          playDamageSfx(); // Som de dano no jogador
+
+          // BOSS FALA AO ATACAR
+          const attackPhrases = currentArena.boss.phrases.error;
+          setBossReactionSpeech(attackPhrases[Math.floor(Math.random() * attackPhrases.length)]);
+
+          setTimeout(() => {
+            setBossStatus('idle');
+            setIsShaking(false);
+          }, 500);
+
+          lastAttackTimeRef.current = now; // Reset timer for next hit
+        }
+      }, 200);
+    }
+    return () => { if (counterAttackTimerRef.current) clearInterval(counterAttackTimerRef.current); };
+  }, [gameState, showBossIntro, activeDialogue, currentArena.id]);
 
   useEffect(() => {
     if (gameState === GameState.PLAYING && timeLeft === 0 && !isEndingRef.current) endGame();
@@ -600,9 +648,33 @@ const App: React.FC = () => {
       // Arena 3: 5x
       // Arena 4: 8x
       // Arena 5: 13x
-      const arenaMultiplier = Math.ceil(Math.pow(currentArena.id, 2) / 2);
+      const arenaMultiplier = Math.max(1, currentArena.id);
       const xpGain = getXPForLevel(currentLevel) * arenaMultiplier;
       const bonus = getTimeBonus(currentLevel);
+
+      lastAttackTimeRef.current = Date.now();
+
+      // MECÂNICA DE INTERFERÊNCIA (BOSS 4 E 5)
+      if (currentArena.id >= 4) {
+        // Chance de trocar alternativas (40%)
+        if (Math.random() < 0.4) {
+          setCurrentOptions(prev => shuffle([...prev]));
+          setIsShaking(true);
+          setTimeout(() => setIsShaking(false), 600);
+          setBossReactionSpeech("PRESTE ATENÇÃO!");
+          setTimeout(() => setBossReactionSpeech(null), 1000);
+        }
+        // Chance de trocar a nota alvo (30%)
+        else if (Math.random() < 0.3) {
+          const newIdx = Math.floor(Math.random() * chordsPool.length);
+          setCurrentIndex(newIdx);
+          setCurrentOptions(generateOptions(chordsPool[newIdx]));
+          setIsShaking(true);
+          setTimeout(() => setIsShaking(false), 600);
+          setBossReactionSpeech("MUDE O TOM!");
+          setTimeout(() => setBossReactionSpeech(null), 1000);
+        }
+      }
 
       setScore(newScore);
       setHits(prev => prev + 1);
@@ -801,7 +873,7 @@ const App: React.FC = () => {
     <div className="fixed inset-0 bg-[#050505] flex items-center justify-center overflow-hidden">
       {/* Container "Mobile View" para Desktop */}
       <div
-        className={`relative w-full h-full max-w-[480px] mx-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-all duration-1000 flex flex-col items-center select-none overflow-hidden ${isPlaying ? currentArena.colors.text : 'text-white'}`}
+        className={`relative w-full h-full max-w-[480px] mx-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-all duration-1000 flex flex-col items-center select-none overflow-hidden ${isPlaying ? currentArena.colors.text : 'text-white'} ${isShaking ? 'shake' : ''}`}
         style={isPlaying ? {
           backgroundImage: `url(${currentArena.bgImage})`,
           backgroundSize: 'cover',
@@ -813,6 +885,23 @@ const App: React.FC = () => {
       >
         {/* Overlay de Proteção para Legibilidade (Apenas no Jogo) */}
         {isPlaying && <div className="absolute inset-0 z-0 pointer-events-none bg-black/40" />}
+
+        {gameState === GameState.PLAYING && playerHP <= 0 && (
+          <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-8 animate-in fade-in">
+            <div className="relative mb-8">
+              <i className="fa-solid fa-skull text-8xl text-red-600 animate-bounce"></i>
+              <div className="absolute inset-0 bg-red-600/20 blur-3xl rounded-full"></div>
+            </div>
+            <h2 className="text-5xl font-black text-red-600 mb-2 font-medieval text-center">DERROTADO</h2>
+            <p className="text-white/60 text-center mb-10 uppercase tracking-[0.3em] text-[10px] font-bold">Sua melodia foi silenciada...</p>
+            <button
+              onClick={() => endGame()}
+              className="w-full max-w-[240px] bg-red-600 hover:bg-red-500 text-white font-black py-5 rounded-2xl text-lg uppercase tracking-widest active:scale-95 transition-all shadow-[0_8px_0_#991b1b]"
+            >
+              RETORNAR AO MENU
+            </button>
+          </div>
+        )}
 
         {gameState === GameState.MENU && (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden relative">
@@ -1211,11 +1300,11 @@ const App: React.FC = () => {
                 <div className="relative">
                   {/* BOSS REACTION SPEECH BUBBLE (Moved outside to avoid grayscale) */}
                   {bossReactionSpeech && (
-                    <div className="absolute -top-20 left-1/2 -translate-x-1/2 z-[70] animate-bounce w-[90vw] max-w-[200px] flex justify-center pointer-events-none">
+                    <div className="absolute top-4 -right-12 z-[70] animate-bounce w-[90vw] max-w-[160px] flex justify-center pointer-events-none">
                       <div className="bg-white px-3 py-2 rounded-xl border-4 border-stone-800 shadow-2xl relative w-full text-center">
-                        <p className="text-stone-900 font-black text-[10px] leading-tight text-center italic drop-shadow-sm break-words whitespace-normal">"{bossReactionSpeech}"</p>
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-[10px] border-transparent border-t-stone-800" />
-                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-8 border-transparent border-t-white" />
+                        <p className="text-stone-900 font-black text-[9px] leading-tight text-center italic drop-shadow-sm break-words whitespace-normal">"{bossReactionSpeech}"</p>
+                        <div className="absolute top-4 -left-4 w-0 h-0 border-[8px] border-transparent border-r-stone-800" />
+                        <div className="absolute top-4 -left-3 w-0 h-0 border-[6px] border-transparent border-r-white" />
                       </div>
                     </div>
                   )}

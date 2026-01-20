@@ -72,7 +72,7 @@ export const ARENAS: ArenaConfig[] = [
     {
         id: 2,
         name: 'Arena II: Cavernas de Cristal',
-        minXP: 5000,
+        minXP: 10000,
         bgImage: '/assets/arenas/arena_2_crystal_cave.png',
         bgm: '/assets/audio/arena_2_theme.mp3',
         boss: {
@@ -113,8 +113,8 @@ export const ARENAS: ArenaConfig[] = [
     },
     {
         id: 3,
-        name: 'Arena Avançado: Portões Dourados',
-        minXP: 15000,
+        name: 'Arena III: Portões Dourados',
+        minXP: 35000,
         bgImage: '/assets/arenas/arena_3_ruins.png',
         bgm: '/assets/audio/arena_3_theme.mp3',
         boss: {
@@ -155,8 +155,8 @@ export const ARENAS: ArenaConfig[] = [
     },
     {
         id: 4,
-        name: 'Arena Solista: O Conservatório Silencioso',
-        minXP: 30000,
+        name: 'Arena IV: O Conservatório Silencioso',
+        minXP: 75000,
         bgImage: '/assets/arenas/arena_4_conservatory.png',
         bgm: '/assets/audio/arena_4_theme.mp3',
         boss: {
@@ -198,7 +198,7 @@ export const ARENAS: ArenaConfig[] = [
     {
         id: 5,
         name: 'A Revelação: Lorde Silêncio',
-        minXP: 50000,
+        minXP: 150000,
         bgImage: '/assets/arenas/arena_5_dimension.png',
         bgm: '/assets/audio/arena_5_theme.mp3',
         boss: {
