@@ -35,21 +35,27 @@ const App: React.FC = () => {
         accumulatedXP: parsed.accumulatedXP || 0,
         recoveryPin: parsed.recoveryPin,
         unlockedArenaId: parsed.unlockedArenaId || 1,
-        seenStoryIds: parsed.seenStoryIds || []
+        seenStoryIds: parsed.seenStoryIds || [],
+        lastPlayedArenaId: parsed.lastPlayedArenaId || 1
       };
     }
-    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0, recoveryPin: '', unlockedArenaId: 1, seenStoryIds: [] };
+    return { playerName: '', highScore: 0, acordeCoins: 0, accumulatedXP: 0, recoveryPin: '', unlockedArenaId: 1, seenStoryIds: [], lastPlayedArenaId: 1 };
   });
 
   const calculateCurrentArena = () => {
     const xpArena = getCurrentArena(stats.accumulatedXP || 0);
     const unlockedId = stats.unlockedArenaId || 1;
+    const lastPlayedId = stats.lastPlayedArenaId || 1;
 
-    // Se o jogador já tem XP de arenas superiores, permitimos que ele comece nela se o unlockedId estiver "atrasado"
-    // ou se ele preferir (neste caso, mantemos o Math.min para respeitar a progressão obrigatória de bater o boss,
-    // porem garantindo que o unlockedId seja persistido corretamente).
-    const effectiveId = Math.min(xpArena.id, unlockedId);
-    return ARENAS.find(a => a.id === effectiveId) || ARENAS[0];
+    // Priorizamos a que ele jogou por último, DESDE QUE ele tenha XP e Progressão para ela
+    // Se o lastPlayedId for maior do que ele desbloqueou, forçamos o unlockId.
+    const effectiveUnlocked = Math.min(xpArena.id, unlockedId);
+
+    // Se a arena que ele jogou por último ainda é válida (desbloqueada), usamos ela.
+    // Caso contrário, usamos a maior possível.
+    const selectedId = (lastPlayedId <= effectiveUnlocked) ? lastPlayedId : effectiveUnlocked;
+
+    return ARENAS.find(a => a.id === selectedId) || ARENAS[0];
   };
 
   const currentArena = calculateCurrentArena();
@@ -180,7 +186,7 @@ const App: React.FC = () => {
         const deviceId = getDeviceId();
         const { data: profileData, error: syncError } = await supabase
           .from('players')
-          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids, last_played_arena_id')
           .eq('device_id', deviceId)
           .maybeSingle();
 
@@ -193,7 +199,8 @@ const App: React.FC = () => {
             accumulatedXP: (profileData.accumulated_xp !== null && profileData.accumulated_xp !== undefined) ? profileData.accumulated_xp : prev.accumulatedXP,
             recoveryPin: profileData.recovery_pin,
             unlockedArenaId: profileData.unlocked_arena_id || prev.unlockedArenaId || 1,
-            seenStoryIds: profileData.seen_story_ids || prev.seenStoryIds || []
+            seenStoryIds: profileData.seen_story_ids || prev.seenStoryIds || [],
+            lastPlayedArenaId: profileData.last_played_arena_id || prev.lastPlayedArenaId || 1
           }));
           if (!profileData.name) setShowNameModal(true);
           fetchDailyMissions();
@@ -286,7 +293,8 @@ const App: React.FC = () => {
             accumulatedXP: recoveredProfile.accumulated_xp || 0,
             recoveryPin: recoveredProfile.recovery_pin || '',
             unlockedArenaId: recoveredProfile.unlocked_arena_id || 1,
-            seenStoryIds: recoveredProfile.seen_story_ids || []
+            seenStoryIds: recoveredProfile.seen_story_ids || [],
+            lastPlayedArenaId: recoveredProfile.last_played_arena_id || 1
           });
         }
         setIsRenaming(false);
@@ -423,6 +431,8 @@ const App: React.FC = () => {
     const deviceId = getDeviceId();
     // Segurança: Avisa o banco que uma partida legítima começou (Não bloqueamos para agilizar o início)
     supabase.rpc('start_game_session', { device_id_param: deviceId });
+    // Persiste última arena jogada
+    supabase.rpc('save_last_played_arena', { device_id_param: deviceId, arena_id: targetArenaId });
 
     setChordsPool(initialPool);
     setCurrentIndex(0);
@@ -583,7 +593,7 @@ const App: React.FC = () => {
       if (existsNext) {
         try {
           // Atualiza Local
-          setStats(prev => ({ ...prev, unlockedArenaId: nextId }));
+          setStats(prev => ({ ...prev, unlockedArenaId: nextId, lastPlayedArenaId: nextId }));
           alert(`🏆 GUARDIÃO DERROTADO! Arena ${nextId} Desbloqueada!`);
 
           // Atualiza Remoto via RPC
@@ -617,7 +627,8 @@ const App: React.FC = () => {
       highScore: Math.max(prev.highScore, finalScore),
       acordeCoins: prev.acordeCoins + Math.floor(finalXP * 0.1),
       accumulatedXP: (prev.accumulatedXP || 0) + finalXP,
-      unlockedArenaId: nextId
+      unlockedArenaId: nextId,
+      lastPlayedArenaId: nextId
     }));
 
     // Async Save
@@ -1523,7 +1534,10 @@ const App: React.FC = () => {
               selectedCardId={stats.selectedCardId}
               onCardSelect={(cardId) => setStats(prev => ({ ...prev, selectedCardId: cardId }))}
               unlockedArenaId={stats.unlockedArenaId || 1}
-              onPlayStory={(id) => setActiveStoryId(id)}
+              onPlayStory={(id) => {
+                setStats(prev => ({ ...prev, lastPlayedArenaId: id }));
+                setActiveStoryId(id);
+              }}
             />
           )
         }

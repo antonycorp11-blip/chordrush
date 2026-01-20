@@ -16,6 +16,7 @@ export interface GameStats {
   recoveryPin?: string;
   unlockedArenaId?: number; // Identificador da maior arena desbloqueada (Inicia em 1)
   seenStoryIds?: number[]; // IDs das histórias já visualizadas
+  lastPlayedArenaId?: number; // Última arena que o jogador jogou
 }
 
 export interface Mission {
