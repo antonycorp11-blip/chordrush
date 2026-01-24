@@ -65,9 +65,9 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack, playerName }
             if (error) throw error;
             alert('✅ Ranking resetado com sucesso!');
             fetchRanking();
-        } catch (err) {
+        } catch (err: any) {
             console.error('Erro ao resetar ranking:', err);
-            alert('Falha ao resetar ranking.');
+            alert('Falha ao resetar ranking: ' + (err.message || 'Erro desconhecido'));
         } finally {
             setLoading(false);
         }
