@@ -1535,7 +1535,7 @@ const App: React.FC = () => {
           )
         }
 
-        {gameState === GameState.RANKING && (<RankingBoard onBack={() => setGameState(GameState.MENU)} />)}
+        {gameState === GameState.RANKING && (<RankingBoard onBack={() => setGameState(GameState.MENU)} playerName={stats.playerName} />)}
 
         {
           gameState === GameState.STORE && (

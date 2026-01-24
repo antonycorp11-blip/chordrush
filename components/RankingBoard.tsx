@@ -7,9 +7,10 @@ import { CARDS } from '../constants/cards';
 
 interface RankingBoardProps {
     onBack: () => void;
+    playerName?: string;
 }
 
-export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
+export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack, playerName }) => {
     const [ranking, setRanking] = React.useState<RankingEntry[]>([]);
     const [lastSync, setLastSync] = React.useState<Date | null>(null);
     const [loading, setLoading] = React.useState(true);
@@ -51,6 +52,22 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
         } catch (err) {
             console.error('Erro ao processar ranking V3:', err);
             alert('Falha ao carregar ranking. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleResetRanking = async () => {
+        if (!window.confirm('⚠️ ATENÇÃO: Isso irá zerar TODAS as pontuações do ranking. Os nomes serão mantidos. Deseja continuar?')) return;
+
+        setLoading(true);
+        try {
+            const { error } = await supabase.rpc('reset_ranking_full_admin');
+            if (error) throw error;
+            alert('✅ Ranking resetado com sucesso!');
+            fetchRanking();
+        } catch (err) {
+            console.error('Erro ao resetar ranking:', err);
+            alert('Falha ao resetar ranking.');
         } finally {
             setLoading(false);
         }
@@ -128,6 +145,20 @@ export const RankingBoard: React.FC<RankingBoardProps> = ({ onBack }) => {
                     </div>
                 </div>
             </div>
+
+            {/* ADMIN RESET BUTTON */}
+            {playerName === 'AQUILLES ANTONY' && (
+                <div className="px-6 mb-4">
+                    <button
+                        onClick={handleResetRanking}
+                        className="w-full bg-red-600/20 hover:bg-red-600 text-red-500 hover:text-white border-2 border-red-600/30 rounded-2xl py-3 font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-3 shadow-lg"
+                    >
+                        <i className="fa-solid fa-trash-can"></i>
+                        Reset Total do Ranking
+                    </button>
+                    <p className="text-[7px] text-white/20 uppercase font-black tracking-widest mt-2 text-center">Visível apenas para Administrador</p>
+                </div>
+            )}
 
             {loading && ranking.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4">
