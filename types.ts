@@ -37,7 +37,8 @@ export interface PlayerMission extends Mission {
 
 export enum GameMode {
   NORMAL = 'NORMAL',
-  HARD = 'HARD'
+  HARD = 'HARD',
+  RUSH = 'RUSH'
 }
 
 export enum GameState {

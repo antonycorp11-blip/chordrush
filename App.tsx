@@ -280,7 +280,7 @@ const App: React.FC = () => {
         // Re-sincroniza tudo
         const { data: recoveredProfile } = await supabase
           .from('players')
-          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids')
+          .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids, last_played_arena_id')
           .eq('device_id', deviceId)
           .maybeSingle();
 
@@ -400,7 +400,7 @@ const App: React.FC = () => {
     // Use 'currentArena.id' because it already handles Debug vs XP logic correctly at the top of the component
     const targetArenaId = currentArena.id;
 
-    if (!stats.seenStoryIds?.includes(targetArenaId)) {
+    if (selectedMode !== GameMode.RUSH && !stats.seenStoryIds?.includes(targetArenaId)) {
       setActiveStoryId(targetArenaId);
       return; // Pause start until story is closed
     }
@@ -438,17 +438,21 @@ const App: React.FC = () => {
     setCurrentIndex(0);
     setCurrentOptions(generateOptions(initialPool[0]));
 
-    // Iniciar Sequência de Intro do Boss
-    const introPhrases = currentArena.boss.phrases.intro;
-    const phrase = introPhrases[Math.floor(Math.random() * introPhrases.length)];
-    setBossPhrase(phrase);
-    setShowBossIntro(true);
+    // Iniciar Sequência de Intro do Boss (Pular no RUSH)
+    if (selectedMode !== GameMode.RUSH) {
+      const introPhrases = currentArena.boss.phrases.intro;
+      const phrase = introPhrases[Math.floor(Math.random() * introPhrases.length)];
+      setBossPhrase(phrase);
+      setShowBossIntro(true);
+      setTimeout(() => {
+        setShowBossIntro(false);
+      }, 4000);
+    } else {
+      setShowBossIntro(false);
+    }
+
     setGameState(GameState.PLAYING);
     startBattleMusic();
-
-    setTimeout(() => {
-      setShowBossIntro(false);
-    }, 4000);
 
     // Resetar progresso da sessão para missões
     setMissionProgress({
@@ -583,8 +587,8 @@ const App: React.FC = () => {
     // Mas simplificando: Se a arena atual (pelo ID) é menor que a arena de XP, então progresso é 100%
     const isBossDefeated = (stats.accumulatedXP || 0) + finalXP >= nextArena.minXP;
 
-    // Se estavamos jogando na arena limite E o Boss estava "vulnerável" (HP zero / Progresso 100%)
-    if (currentArena.id === currentUnlockedId && isBossDefeated && finalScore > 0) {
+    // Se estavamos jogando na arena limite E o Boss estava "vulnerável" (HP zero / Progresso 100%) - SOMENTE NO MODO HISTÓRIA
+    if (mode !== GameMode.RUSH && currentArena.id === currentUnlockedId && isBossDefeated && finalScore > 0) {
       // Desbloquear próxima arena
       const nextId = currentUnlockedId + 1;
       // Verifica se existe próxima arena
@@ -671,8 +675,8 @@ const App: React.FC = () => {
 
       lastAttackTimeRef.current = Date.now();
 
-      // MECÂNICA DE INTERFERÊNCIA (BOSS 4 E 5)
-      if (currentArena.id >= 4) {
+      // MECÂNICA DE INTERFERÊNCIA (BOSS 4 E 5) - DESATIVADA NO RUSH
+      if (mode !== GameMode.RUSH && currentArena.id >= 4) {
         // Chance de trocar alternativas (40%)
         if (Math.random() < 0.4) {
           setCurrentOptions(prev => shuffle([...prev]));
@@ -696,7 +700,7 @@ const App: React.FC = () => {
             setIsShaking(false);
             setInterferenceActive(null);
           }, 1200);
-          setBossReactionSpeech("MUDE O TOM!");
+          setBossReactionSpeech("MUDE O TON!");
           setTimeout(() => setBossReactionSpeech(null), 1500);
         }
       }
@@ -720,7 +724,7 @@ const App: React.FC = () => {
       const estimatedTotalXP = (stats.accumulatedXP || 0) + estimatedSessionXP;
 
       const nextArena = ARENAS.find(a => a.id === currentArena.id + 1);
-      if (nextArena && estimatedTotalXP >= nextArena.minXP && !victoryHandled) {
+      if (mode !== GameMode.RUSH && nextArena && estimatedTotalXP >= nextArena.minXP && !victoryHandled) {
         setVictoryHandled(true);
         setShowBossVictory(true);
         if (timerRef.current) clearInterval(timerRef.current);
@@ -762,63 +766,56 @@ const App: React.FC = () => {
         setSessionXP(prev => prev + (xpGain * 2));
         setIsSpecialCharged(false);
 
-        // TRIGGER DIALOGUE AFTER SPECIAL ATTACK (1.5s delay for animation)
-        setTimeout(() => {
-          // Check state ref or variable to ensure we are still playing? 
-          // We use the ref version of 'activeDialogue' checking in effect, but here we just set it.
-          // But we must assume 'gameState' is accessible or check ref if possible, but 'gameState' is in scope.
-          // However, inside setTimeout closure, it captures old value unless we use ref.
-          // Since we don't have gameStateRef, let's just trigger it. The overlay handles display.
-          const interactions = ARENA_DIALOGUES[currentArena.id] || [];
-          if (interactions.length > 0) {
-            // ALWAYS trigger dialogue for testing purposes as requested
-            // if (Math.random() < 0.5) { // Anterior: 50%
-            if (true) {
-              let pool = interactions;
-              // Avoid repeating the last dialogue if possible
-              if (interactions.length > 1 && lastDialogueIdRef.current) {
-                pool = interactions.filter(i => i.id !== lastDialogueIdRef.current);
+        // TRIGGER DIALOGUE AFTER SPECIAL ATTACK (1.5s delay for animation) - DISABLED IN RUSH
+        if (mode !== GameMode.RUSH) {
+          setTimeout(() => {
+            const interactions = ARENA_DIALOGUES[currentArena.id] || [];
+            if (interactions.length > 0) {
+              if (true) {
+                let pool = interactions;
+                if (interactions.length > 1 && lastDialogueIdRef.current) {
+                  pool = interactions.filter(i => i.id !== lastDialogueIdRef.current);
+                }
+                const randomInteraction = pool[Math.floor(Math.random() * pool.length)];
+                lastDialogueIdRef.current = randomInteraction.id;
+                setActiveDialogue(randomInteraction);
               }
-              const randomInteraction = pool[Math.floor(Math.random() * pool.length)];
-              lastDialogueIdRef.current = randomInteraction.id;
-              setActiveDialogue(randomInteraction);
             }
-          }
-        }, 1500);
+          }, 1500);
+        }
 
       } else if (newCombo > 0 && newCombo % 10 === 0) {
         setIsSpecialCharged(true);
       }
 
-      // Lançar Projetil com ponto de origem dinâmico
-      const projId = Date.now();
-      let startX = 0;
-      let startY = 0;
-      if (clickX !== undefined && clickY !== undefined) {
-        // Calcular posição relativa ao centro do container de jogo
-        startX = clickX - window.innerWidth / 2;
-        startY = clickY - (window.innerHeight - 200);
+      // Lançar Projetil (Somente no MODO HISTÓRIA)
+      if (mode !== GameMode.RUSH) {
+        const projId = Date.now();
+        let startX = 0;
+        let startY = 0;
+        if (clickX !== undefined && clickY !== undefined) {
+          startX = clickX - window.innerWidth / 2;
+          startY = clickY - (window.innerHeight - 200);
+        }
+
+        setProjectiles(prev => [...prev, { id: projId, x: startX, y: startY, isSpecial: isSpecialCharged }]);
+        playAttackSfx();
+
+        if (Math.random() > 0.6) {
+          const damagePhrases = currentArena.boss.phrases.damage;
+          const reaction = damagePhrases[Math.floor(Math.random() * damagePhrases.length)];
+          setBossReactionSpeech(reaction);
+          if (reactionTimeoutRef.current) clearTimeout(reactionTimeoutRef.current);
+          reactionTimeoutRef.current = setTimeout(() => setBossReactionSpeech(null), 2000);
+        }
+
+        setTimeout(() => {
+          setProjectiles(prev => prev.filter(p => p.id !== projId));
+          setBossStatus('taking-damage');
+          playDamageSfx();
+          setTimeout(() => setBossStatus('idle'), 400);
+        }, 700);
       }
-
-      setProjectiles(prev => [...prev, { id: projId, x: startX, y: startY, isSpecial: isSpecialCharged }]);
-      playAttackSfx(); // Som do disparo mágico imediato
-
-      // Reação do Boss ao Dano (40% de chance)
-      // Reação do Boss ao Dano (40% de chance)
-      if (Math.random() > 0.6) {
-        const damagePhrases = currentArena.boss.phrases.damage;
-        const reaction = damagePhrases[Math.floor(Math.random() * damagePhrases.length)];
-        setBossReactionSpeech(reaction);
-        if (reactionTimeoutRef.current) clearTimeout(reactionTimeoutRef.current);
-        reactionTimeoutRef.current = setTimeout(() => setBossReactionSpeech(null), 2000);
-      }
-
-      setTimeout(() => {
-        setProjectiles(prev => prev.filter(p => p.id !== projId));
-        setBossStatus('taking-damage');
-        playDamageSfx(); // Som do impacto cronometrado com o projétil
-        setTimeout(() => setBossStatus('idle'), 400);
-      }, 700);
 
       if ((hits + 1) % 10 === 0 && (hits + 1) > 0 && currentLevel < 7) setCurrentLevel(prev => prev + 1);
     } else {
@@ -829,8 +826,8 @@ const App: React.FC = () => {
       setPlayerHP(prev => Math.max(0, prev - 10));
       setTimeout(() => setBossStatus('idle'), 500);
 
-      // Reação do Boss ao Erro (60% de chance)
-      if (Math.random() > 0.4) {
+      // Reação do Boss ao Erro (DESATIVADA NO RUSH)
+      if (mode !== GameMode.RUSH && Math.random() > 0.4) {
         const errorPhrases = currentArena.boss.phrases.error;
         const reaction = errorPhrases[Math.floor(Math.random() * errorPhrases.length)];
         setBossReactionSpeech(reaction);
@@ -900,10 +897,10 @@ const App: React.FC = () => {
       <div
         className={`relative w-full h-full max-w-[480px] mx-auto shadow-[0_0_100px_rgba(0,0,0,0.5)] transition-all duration-1000 flex flex-col items-center select-none overflow-hidden ${isPlaying ? currentArena.colors.text : 'text-white'} ${isShaking ? 'shake' : ''}`}
         style={isPlaying ? {
-          backgroundImage: `url(${currentArena.bgImage})`,
+          backgroundImage: (mode === GameMode.RUSH) ? 'none' : `url(${currentArena.bgImage})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          backgroundColor: '#0a0a0a'
+          backgroundColor: (mode === GameMode.RUSH) ? '#050505' : '#0a0a0a'
         } : {
           backgroundColor: '#0a0a0a'
         }}
@@ -1073,13 +1070,23 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-5 w-full">
-                    <button
-                      onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
-                      disabled={!stats.playerName.trim() || !syncDone}
-                      className={`w-full relative overflow-hidden ${currentArena.colors.button} font-black py-5 rounded-2xl text-3xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[8px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:brightness-110'}`}
-                    >
-                      JOGAR AGORA
-                    </button>
+                    <div className="flex flex-col gap-3 w-full">
+                      <button
+                        onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
+                        disabled={!stats.playerName.trim() || !syncDone}
+                        className={`w-full relative overflow-hidden ${currentArena.colors.button} font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[8px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:brightness-110'}`}
+                      >
+                        MODO HISTÓRIA
+                      </button>
+
+                      <button
+                        onClick={() => stats.playerName.trim() && startNewGame(GameMode.RUSH)}
+                        disabled={!stats.playerName.trim() || !syncDone}
+                        className={`w-full relative overflow-hidden bg-slate-800 border-2 border-slate-700 text-white font-black py-4 rounded-2xl text-xl transition-all shadow-[0_4px_0_#1e293b] active:shadow-none active:translate-y-[4px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-700'}`}
+                      >
+                        MODO RUSH
+                      </button>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -1325,10 +1332,12 @@ const App: React.FC = () => {
                   <span className="text-[10px] font-black text-white/40 uppercase block">Tempo</span>
                   <span className={`text-base font-black tabular-nums transition-all ${timeLeft < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{formatTime(timeLeft)}</span>
                 </div>
-                <div className="text-center">
-                  <span className="text-[10px] font-black text-yellow-600/60 uppercase block font-medieval">Arena</span>
-                  <span className="text-sm font-black text-yellow-500 uppercase tracking-tighter">{currentArena.id}</span>
-                </div>
+                {mode !== GameMode.RUSH && (
+                  <div className="text-center">
+                    <span className="text-[10px] font-black text-yellow-600/60 uppercase block font-medieval">Arena</span>
+                    <span className="text-sm font-black text-yellow-500 uppercase tracking-tighter">{currentArena.id}</span>
+                  </div>
+                )}
                 <div className="text-center">
                   <span className="text-[10px] font-black text-orange-600/60 uppercase block">XP</span>
                   <span className="text-base font-black text-orange-400">+{sessionXP}</span>
@@ -1359,40 +1368,44 @@ const App: React.FC = () => {
                 </div>
               ))}
 
-              {/* BOSS AREA (CENTER-TOP) */}
-              <div className="w-full flex flex-col items-center justify-center gap-2 mt-4">
-                <div className="w-full max-w-[280px] mb-4">
-                  <div className="w-full h-5 bg-stone-950 rounded-full border-2 border-stone-700 overflow-hidden relative shadow-[0_0_15px_rgba(0,0,0,0.8)]">
-                    <div className={`h-full bg-gradient-to-r ${bossHP <= 0 ? 'from-stone-600 to-stone-800' : 'from-red-600 via-red-500 to-rose-400'} rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]`} style={{ width: `${Math.max(0, bossHP)}%` }} />
-                    <div className="absolute inset-x-0 top-0 h-full flex items-center justify-between px-3">
-                      <span className="text-[10px] font-black text-white uppercase tracking-wider drop-shadow-md">{currentArena.boss.name}</span>
-                      <span className="text-[10px] font-black text-white drop-shadow-md">{Math.ceil(bossHP)}%</span>
-                    </div>
-                    {/* Tick marks for HP bar */}
-                    <div className="absolute inset-0 flex justify-evenly pointer-events-none opacity-20">
-                      {[1, 2, 3, 4].map(i => <div key={i} className="w-[1px] h-full bg-white" />)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="relative">
-                  {/* BOSS REACTION SPEECH BUBBLE (Moved outside to avoid grayscale) */}
-                  {bossReactionSpeech && (
-                    <div className="absolute top-4 -right-12 z-[70] animate-bounce w-[90vw] max-w-[160px] flex justify-center pointer-events-none">
-                      <div className="bg-white px-3 py-2 rounded-xl border-4 border-stone-800 shadow-2xl relative w-full text-center">
-                        <p className="text-stone-900 font-black text-[9px] leading-tight text-center italic drop-shadow-sm break-words whitespace-normal">"{bossReactionSpeech}"</p>
-                        <div className="absolute top-4 -left-4 w-0 h-0 border-[8px] border-transparent border-r-stone-800" />
-                        <div className="absolute top-4 -left-3 w-0 h-0 border-[6px] border-transparent border-r-white" />
+              {/* BOSS AREA (CENTER-TOP) - HIDDEN IN RUSH */}
+              {mode !== GameMode.RUSH ? (
+                <div className="w-full flex flex-col items-center justify-center gap-2 mt-4">
+                  <div className="w-full max-w-[280px] mb-4">
+                    <div className="w-full h-5 bg-stone-950 rounded-full border-2 border-stone-700 overflow-hidden relative shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+                      <div className={`h-full bg-gradient-to-r ${bossHP <= 0 ? 'from-stone-600 to-stone-800' : 'from-red-600 via-red-500 to-rose-400'} rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]`} style={{ width: `${Math.max(0, bossHP)}%` }} />
+                      <div className="absolute inset-x-0 top-0 h-full flex items-center justify-between px-3">
+                        <span className="text-[10px] font-black text-white uppercase tracking-wider drop-shadow-md">{currentArena.boss.name}</span>
+                        <span className="text-[10px] font-black text-white drop-shadow-md">{Math.ceil(bossHP)}%</span>
+                      </div>
+                      {/* Tick marks for HP bar */}
+                      <div className="absolute inset-0 flex justify-evenly pointer-events-none opacity-20">
+                        {[1, 2, 3, 4].map(i => <div key={i} className="w-[1px] h-full bg-white" />)}
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  <div className={`relative w-64 h-64 transition-all duration-300 ${bossStatus === 'taking-damage' ? 'animate-shake damage-flash scale-95' : bossStatus === 'attacking' ? 'scale-110' : 'scale-100'} ${(bossHP <= 0 && !showBossVictory) ? 'opacity-0 scale-0' : (bossHP <= 0 ? 'grayscale opacity-50' : '')}`}>
-                    <img src={currentArena.boss.image} className="w-full h-full object-contain object-bottom pixelated" style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.8))' }} />
-                    {bossStatus === 'taking-damage' && <div className="absolute inset-0 bg-white/30 mix-blend-overlay animate-pulse rounded-full blur-3xl" />}
+                  <div className="relative">
+                    {/* BOSS REACTION SPEECH BUBBLE (Moved outside to avoid grayscale) */}
+                    {bossReactionSpeech && (
+                      <div className="absolute top-4 -right-12 z-[70] animate-bounce w-[90vw] max-w-[160px] flex justify-center pointer-events-none">
+                        <div className="bg-white px-3 py-2 rounded-xl border-4 border-stone-800 shadow-2xl relative w-full text-center">
+                          <p className="text-stone-900 font-black text-[9px] leading-tight text-center italic drop-shadow-sm break-words whitespace-normal">"{bossReactionSpeech}"</p>
+                          <div className="absolute top-4 -left-4 w-0 h-0 border-[8px] border-transparent border-r-stone-800" />
+                          <div className="absolute top-4 -left-3 w-0 h-0 border-[6px] border-transparent border-r-white" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={`relative w-64 h-64 transition-all duration-300 ${bossStatus === 'taking-damage' ? 'animate-shake damage-flash scale-95' : bossStatus === 'attacking' ? 'scale-110' : 'scale-100'} ${(bossHP <= 0 && !showBossVictory) ? 'opacity-0 scale-0' : (bossHP <= 0 ? 'grayscale opacity-50' : '')}`}>
+                      <img src={currentArena.boss.image} className="w-full h-full object-contain object-bottom pixelated" style={{ filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.8))' }} />
+                      {bossStatus === 'taking-damage' && <div className="absolute inset-0 bg-white/30 mix-blend-overlay animate-pulse rounded-full blur-3xl" />}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="h-20" /> // Spacer for RUSH mode
+              )}
 
               {/* CHORD DISPLAY (CENTER-BOTTOM) */}
               <div className="flex-1 flex flex-col items-center justify-center -mt-6">
@@ -1450,7 +1463,7 @@ const App: React.FC = () => {
             <div className="w-full flex flex-col gap-4 mt-auto pb-4">
               <div className="w-full h-5 bg-stone-900/80 rounded-xl overflow-hidden border-2 border-stone-700 relative shadow-inner">
                 <div
-                  className={`h-full transition-all duration-500 ease-out flex items-center justify-end px-3 ${isOnFire ? 'bg-gradient-to-r from-orange-600 via-red-600 to-red-800 animate-pulse' : `bg-gradient-to-r ${currentArena.colors.primary}`}`}
+                  className={`h-full transition-all duration-500 ease-out flex items-center justify-end px-3 ${isOnFire ? 'bg-gradient-to-r from-orange-600 via-red-600 to-red-800 animate-pulse' : (mode === GameMode.RUSH ? 'bg-blue-600' : `bg-gradient-to-r ${currentArena.colors.primary}`)}`}
                   style={{ width: `${progressPercentage}%` }}
                 >
                   {combo >= 2 && <span className="text-[8px] font-medieval font-black text-white/90 tracking-[0.2em]"> {combo} COMBO </span>}
@@ -1465,7 +1478,7 @@ const App: React.FC = () => {
                     disabled={feedback !== null}
                     onClick={handleAnswer}
                     extraClass={feedback === null
-                      ? `${currentArena.colors.button} rounded-2xl p-6 text-3xl font-medieval active:translate-y-[4px] active:shadow-none transition-all hover:brightness-110 border-2`
+                      ? `${mode === GameMode.RUSH ? 'bg-slate-900 border-slate-700 text-slate-100 shadow-[0_4px_0_#0f172a]' : currentArena.colors.button} rounded-2xl p-6 text-3xl font-medieval active:translate-y-[4px] active:shadow-none transition-all hover:brightness-110 border-2`
                       : 'opacity-30 grayscale'}
                   />
                 ))}
