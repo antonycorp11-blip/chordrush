@@ -110,6 +110,7 @@ const App: React.FC = () => {
   const [victoryHandled, setVictoryHandled] = useState(false);
   const [interferenceActive, setInterferenceActive] = useState<string | null>(null);
   const [isGameCompleted, setIsGameCompleted] = useState(false);
+  const [isMissionsExpanded, setIsMissionsExpanded] = useState(false);
 
   // Dialogue System State
   const [activeDialogue, setActiveDialogue] = useState<DialogueInteraction | null>(null);
@@ -1365,77 +1366,94 @@ const App: React.FC = () => {
 
                         {/* ÁREA DE MISSÕES DIÁRIAS (5 MISSÕES) */}
                         <div className="w-full flex flex-col gap-2 mt-4">
-                          <div className="flex items-center justify-between px-1">
-                            <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">Missões do Dia</span>
-                            <span className="text-[8px] font-black text-orange-500 uppercase">{dailyMissions.filter(m => m.is_completed).length} / 5</span>
-                          </div>
+                          <button
+                            onClick={() => setIsMissionsExpanded(!isMissionsExpanded)}
+                            className="flex items-center justify-between px-2 py-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors border border-white/5"
+                          >
+                            <div className="flex items-center gap-2">
+                              {isMissionsExpanded ? (
+                                <i className="fa-solid fa-chevron-up text-[10px] text-white/40"></i>
+                              ) : (
+                                <i className="fa-solid fa-chevron-down text-[10px] text-white/40"></i>
+                              )}
+                              <span className="text-[10px] font-black text-white/60 uppercase tracking-[0.2em] transform translate-y-[1px]">Missões do Dia</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {dailyMissions.some(m => m.is_completed && !m.reward_claimed) && (
+                                <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-[0_0_10px_orange]"></span>
+                              )}
+                              <span className="text-[10px] font-black text-orange-500 uppercase">{dailyMissions.filter(m => m.is_completed).length} / 5</span>
+                            </div>
+                          </button>
 
-                          <div className="flex flex-col gap-2 max-h-[280px] overflow-y-auto no-scrollbar pr-1 pb-2">
-                            {loadingMission ? (
-                              <div className="flex items-center justify-center py-8 bg-white/5 rounded-2xl border border-white/10">
-                                <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                              </div>
-                            ) : dailyMissions.length > 0 ? (
-                              dailyMissions.map((mission) => (
-                                <div
-                                  key={mission.id}
-                                  onClick={() => setSelectedMissionId(selectedMissionId === mission.id ? null : mission.id)}
-                                  className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex flex-col gap-2 cursor-pointer ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'} ${selectedMissionId === mission.id ? 'ring-2 ring-orange-500/30' : ''}`}
-                                >
-                                  <div className="flex items-center justify-between gap-4 w-full">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-1">
-                                        <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
-                                          Recompensa Sorteada
-                                        </span>
-                                        {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
-                                      </div>
-                                      <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
+                          {isMissionsExpanded && (
+                            <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto no-scrollbar pr-1 pb-2 scroll-smooth animate-in slide-in-from-top-4 duration-300">
+                              {loadingMission ? (
+                                <div className="flex items-center justify-center py-8 bg-white/5 rounded-2xl border border-white/10">
+                                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                </div>
+                              ) : dailyMissions.length > 0 ? (
+                                dailyMissions.map((mission) => (
+                                  <div
+                                    key={mission.id}
+                                    onClick={() => setSelectedMissionId(selectedMissionId === mission.id ? null : mission.id)}
+                                    className={`w-full rounded-2xl p-4 border transition-all duration-500 relative flex flex-col gap-2 cursor-pointer ${mission.is_completed && !mission.reward_claimed ? 'bg-orange-600/20 border-orange-500/50 shadow-[0_0_20px_rgba(249,115,22,0.1)]' : 'bg-white/5 border-white/10'} ${selectedMissionId === mission.id ? 'ring-2 ring-orange-500/30' : ''}`}
+                                  >
+                                    <div className="flex items-center justify-between gap-4 w-full">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-[7px] font-black uppercase tracking-widest text-orange-500">
+                                            Recompensa Sorteada
+                                          </span>
+                                          {mission.is_completed && <span className="bg-green-500 text-white text-[6px] px-1.5 py-0.5 rounded font-black uppercase animate-pulse">Pronto!</span>}
+                                        </div>
+                                        <h4 className="text-[10px] font-black text-white uppercase leading-tight mb-1">{mission.title}</h4>
 
-                                      <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
-                                        <div
-                                          className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
-                                          style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
-                                        />
+                                        <div className="mt-2 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                          <div
+                                            className={`h-full transition-all duration-1000 ${mission.is_completed ? 'bg-green-500' : 'bg-orange-500'}`}
+                                            style={{ width: `${Math.min(100, (mission.current_value / mission.goal_value) * 100)}%` }}
+                                          />
+                                        </div>
+                                        <div className="flex justify-between mt-1">
+                                          <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
+                                            {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
+                                          </span>
+                                        </div>
                                       </div>
-                                      <div className="flex justify-between mt-1">
-                                        <span className="text-[6px] font-black text-white/30 uppercase tracking-widest">
-                                          {mission.current_value.toLocaleString()} / {mission.goal_value.toLocaleString()}
-                                        </span>
-                                      </div>
+
+                                      {mission.is_completed && !mission.reward_claimed ? (
+                                        <button
+                                          onClick={(e) => { e.stopPropagation(); openClef(mission.id); }}
+                                          className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
+                                        >
+                                          Abrir
+                                        </button>
+                                      ) : mission.reward_claimed ? (
+                                        <div className="opacity-30">
+                                          <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
+                                        </div>
+                                      ) : (
+                                        <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
+                                          <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
+                                        </div>
+                                      )}
                                     </div>
 
-                                    {mission.is_completed && !mission.reward_claimed ? (
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); openClef(mission.id); }}
-                                        className="px-4 py-2 bg-gradient-to-br from-orange-400 to-orange-600 text-white font-black rounded-xl text-[8px] uppercase tracking-widest transition-all active:scale-95 animate-bounce shadow-xl shadow-orange-500/20"
-                                      >
-                                        Abrir
-                                      </button>
-                                    ) : mission.reward_claimed ? (
-                                      <div className="opacity-30">
-                                        <i className="fa-solid fa-circle-check text-xl text-green-500"></i>
-                                      </div>
-                                    ) : (
-                                      <div className="w-10 h-10 relative flex-shrink-0 grayscale opacity-40">
-                                        <img src="/assets/clefs/clef_comum.png" className="w-full h-full object-contain" />
+                                    {selectedMissionId === mission.id && (
+                                      <div className="border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top duration-300">
+                                        <p className="text-[9px] text-white/50 font-medium leading-relaxed uppercase tracking-wider">{mission.description}</p>
                                       </div>
                                     )}
                                   </div>
-
-                                  {selectedMissionId === mission.id && (
-                                    <div className="border-t border-white/5 pt-2 animate-in fade-in slide-in-from-top duration-300">
-                                      <p className="text-[9px] text-white/50 font-medium leading-relaxed uppercase tracking-wider">{mission.description}</p>
-                                    </div>
-                                  )}
+                                ))
+                              ) : (
+                                <div className="text-center py-6 bg-white/5 rounded-2xl border border-white/10">
+                                  <p className="text-[8px] text-white/20 font-black uppercase">Buscando missões...</p>
                                 </div>
-                              ))
-                            ) : (
-                              <div className="text-center py-6 bg-white/5 rounded-2xl border border-white/10">
-                                <p className="text-[8px] text-white/20 font-black uppercase">Buscando missões...</p>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
