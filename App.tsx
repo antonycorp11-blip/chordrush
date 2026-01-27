@@ -218,9 +218,10 @@ const App: React.FC = () => {
         if (pin) {
           setStatusMessage(`Validando PIN: ${pin}...`);
           try {
+            // BUSCAR DADOS COMPLETOS DIRETAMENTE PELO PIN
             const { data, error } = await supabase
               .from('players')
-              .select('device_id')
+              .select('device_id, name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids, last_played_arena_id')
               .eq('recovery_pin', pin)
               .maybeSingle();
 
@@ -229,11 +230,29 @@ const App: React.FC = () => {
             }
 
             if (data && data.device_id) {
-              setStatusMessage('PIN Válido! Autenticando...');
-              // Login with PIN
+              setStatusMessage('PIN Válido! Carregando Perfil...');
+              // Login with PIN logic
+              // IMPORTANTE: Atualizar o device_id local para bater com o do banco
               localStorage.setItem('chordRush_deviceId', data.device_id);
               sessionStorage.setItem('acorde_gallery_access', 'true');
               authorized = true;
+
+              // JÁ TEMOS OS DADOS, NÃO PRECISA DE SYNC SEPARADO
+              setStatusMessage('Perfil Encontrado! Sincronizando...');
+              setStats(prev => ({
+                ...prev,
+                playerName: data.name || prev.playerName,
+                selectedCardId: data.selected_card_id,
+                acordeCoins: (data.acorde_coins !== null && data.acorde_coins !== undefined) ? data.acorde_coins : prev.acordeCoins,
+                accumulatedXP: (data.accumulated_xp !== null && data.accumulated_xp !== undefined) ? data.accumulated_xp : prev.accumulatedXP,
+                recoveryPin: data.recovery_pin,
+                unlockedArenaId: data.unlocked_arena_id || prev.unlockedArenaId || 1,
+                seenStoryIds: data.seen_story_ids || prev.seenStoryIds || [],
+                lastPlayedArenaId: data.last_played_arena_id || prev.lastPlayedArenaId || 1
+              }));
+
+              setSyncDone(true);
+              fetchDailyMissions();
             } else {
               setDebugError("PIN Inválido: Usuário não encontrado.");
               setStatusMessage("Falha na validação do PIN.");
