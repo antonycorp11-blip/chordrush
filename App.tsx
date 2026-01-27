@@ -317,42 +317,7 @@ const App: React.FC = () => {
 
     initializeApp();
   }, []);
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 bg-black z-[10000] flex flex-col items-center justify-center p-8 text-center font-mono">
-        <div className="w-12 h-12 border-4 border-yellow-500 border-t-white rounded-full animate-spin mb-6"></div>
-        <h2 className="text-xl text-yellow-500 font-bold mb-2">DEBUG MODE</h2>
-        <p className="text-white text-lg animate-pulse mb-4">{statusMessage}</p>
-        {debugError && (
-          <div className="bg-red-900/50 border border-red-500 p-4 rounded-xl text-red-200 text-xs text-left w-full max-w-md break-all">
-            <strong>ERRO CRÍTICO:</strong><br />
-            {debugError}
-            <button onClick={() => window.location.reload()} className="mt-4 w-full bg-red-600 text-white font-bold py-2 rounded uppercase hover:bg-red-500">Tentar Recarregar</button>
-          </div>
-        )}
-        <div className="absolute bottom-4 text-white/20 text-[10px]">Chord Rush v8.0.0 (Slave Mode)</div>
-      </div>
-    );
-  }
 
-  if (isLocked) {
-    return (
-      <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center p-6 text-center z-[9999] font-sans">
-        <h1 className="text-4xl font-black text-red-600 mb-6 tracking-widest uppercase">Acesso Restrito</h1>
-        <p className="text-white/60 mb-8 max-w-md leading-relaxed text-sm">
-          O <strong className="text-white">Chord Rush</strong> é um módulo exclusivo da <strong>Acorde Gallery</strong>.
-          <br /><br />
-          Para jogar, acesse a plataforma oficial.
-        </p>
-        <a
-          href="https://acorde-gallery.vercel.app"
-          className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-xl text-lg uppercase tracking-widest transition-all shadow-lg shadow-purple-900/20"
-        >
-          Ir para Acorde Gallery
-        </a>
-      </div>
-    );
-  }
 
   const closeChangelog = () => {
     localStorage.setItem('chordRush_version', '8.0.0');
@@ -1007,6 +972,44 @@ const App: React.FC = () => {
 
   const bossHP = 100 - arenaProgress;
   const isPlaying = gameState === GameState.PLAYING;
+
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black z-[10000] flex flex-col items-center justify-center p-8 text-center font-mono">
+        <div className="w-12 h-12 border-4 border-yellow-500 border-t-white rounded-full animate-spin mb-6"></div>
+        <h2 className="text-xl text-yellow-500 font-bold mb-2">DEBUG MODE</h2>
+        <p className="text-white text-lg animate-pulse mb-4">{statusMessage}</p>
+        {debugError && (
+          <div className="bg-red-900/50 border border-red-500 p-4 rounded-xl text-red-200 text-xs text-left w-full max-w-md break-all">
+            <strong>ERRO CRÍTICO:</strong><br />
+            {debugError}
+            <button onClick={() => window.location.reload()} className="mt-4 w-full bg-red-600 text-white font-bold py-2 rounded uppercase hover:bg-red-500">Tentar Recarregar</button>
+          </div>
+        )}
+        <div className="absolute bottom-4 text-white/20 text-[10px]">Chord Rush v8.0.0 (Slave Mode)</div>
+      </div>
+    );
+  }
+
+  if (isLocked) {
+    return (
+      <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center p-6 text-center z-[9999] font-sans">
+        <h1 className="text-4xl font-black text-red-600 mb-6 tracking-widest uppercase">Acesso Restrito</h1>
+        <p className="text-white/60 mb-8 max-w-md leading-relaxed text-sm">
+          O <strong className="text-white">Chord Rush</strong> é um módulo exclusivo da <strong>Acorde Gallery</strong>.
+          <br /><br />
+          Para jogar, acesse a plataforma oficial.
+        </p>
+        <a
+          href="https://acorde-gallery.vercel.app"
+          className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-xl text-lg uppercase tracking-widest transition-all shadow-lg shadow-purple-900/20"
+        >
+          Ir para Acorde Gallery
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-[#050505] flex items-center justify-center overflow-hidden">
