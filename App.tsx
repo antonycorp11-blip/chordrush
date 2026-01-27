@@ -1174,13 +1174,16 @@ const App: React.FC = () => {
                     )}
 
                     {!isRecovering && !isRenaming && (
-                      <button
-                        onClick={() => setIsRecovering(true)}
-                        className="w-full text-white/40 text-[10px] font-black uppercase tracking-widest py-4 hover:text-white transition-colors border border-white/10 rounded-xl"
-                      >
-                        <i className="fa-solid fa-cloud-arrow-down mr-2"></i>
-                        Já tenho conta / Resgatar PIN
-                      </button>
+                      <div className="pt-4">
+                        <button
+                          onClick={() => setIsRecovering(true)}
+                          className="w-full bg-orange-600/20 border-2 border-orange-500/50 text-orange-200 font-black uppercase tracking-widest py-4 rounded-xl hover:bg-orange-600 hover:text-white transition-all animate-pulse"
+                        >
+                          <i className="fa-solid fa-cloud-arrow-down mr-2"></i>
+                          JÁ TENHO CONTA (CLIQUE AQUI)
+                        </button>
+                        <p className="text-[9px] text-center text-white/30 mt-2 uppercase">Se seus dados não carregaram, use esta opção.</p>
+                      </div>
                     )}
 
                     <div className="flex flex-col gap-2">
