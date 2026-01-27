@@ -206,8 +206,6 @@ const App: React.FC = () => {
   };
 
 
-
-  // AUTH & INITIALIZATION
   useEffect(() => {
     const initializeApp = async () => {
       try {
