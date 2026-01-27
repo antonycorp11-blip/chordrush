@@ -174,17 +174,64 @@ const App: React.FC = () => {
 
   useEffect(() => { scoreRef.current = score; }, [score]);
   useEffect(() => { levelRef.current = currentLevel; }, [currentLevel]);
+  useEffect(() => { levelRef.current = currentLevel; }, [currentLevel]);
   useEffect(() => { sessionXPRef.current = sessionXP; }, [sessionXP]);
 
   useEffect(() => {
     localStorage.setItem('chordRush_stats', JSON.stringify(stats));
   }, [stats]);
 
+
+  const [isLocked, setIsLocked] = useState(true);
+
+  // AUTH & INITIALIZATION
   useEffect(() => {
-    const syncProfile = async () => {
+    const initializeApp = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const pin = params.get('pin');
+      let authorized = false;
+
+      // 1. PIN CHECK
+      if (pin) {
+        try {
+          const { data, error } = await supabase
+            .from('players')
+            .select('device_id')
+            .eq('recovery_pin', pin)
+            .maybeSingle();
+
+          if (data && data.device_id) {
+            // Login with PIN
+            localStorage.setItem('chordRush_deviceId', data.device_id);
+            sessionStorage.setItem('acorde_gallery_access', 'true');
+            authorized = true;
+          } else {
+            console.error("PIN Invalido", error);
+            alert("⚠️ PIN Inválido ou não encontrado na Galeria.");
+          }
+        } catch (err) {
+          console.error("Erro ao validar PIN", err);
+        }
+      } else {
+        // 2. SESSION CHECK
+        const hasAccess = sessionStorage.getItem('acorde_gallery_access') === 'true';
+        if (hasAccess) {
+          authorized = true;
+        }
+      }
+
+      if (!authorized) {
+        setIsLocked(true);
+        return; // Stop initialization
+      }
+
+      // If authorized, proceed to unlock and sync
+      setIsLocked(false);
+
+      // 3. SYNC PROFILE (Original Logic Adapted)
       try {
-        const deviceId = getDeviceId();
-        const { data: profileData, error: syncError } = await supabase
+        const deviceId = getDeviceId(); // Will get the updated ID from localStorage
+        const { data: profileData } = await supabase
           .from('players')
           .select('name, selected_card_id, acorde_coins, accumulated_xp, recovery_pin, unlocked_arena_id, seen_story_ids, last_played_arena_id')
           .eq('device_id', deviceId)
@@ -202,9 +249,11 @@ const App: React.FC = () => {
             seenStoryIds: profileData.seen_story_ids || prev.seenStoryIds || [],
             lastPlayedArenaId: profileData.last_played_arena_id || prev.lastPlayedArenaId || 1
           }));
-          if (!profileData.name) setShowNameModal(true);
+
           fetchDailyMissions();
         } else {
+          // New Profile Logic can happen here if needed, but usually Gallery handles creation.
+          // We will allow Name Modal for first time setup if name is missing
           setShowNameModal(true);
         }
       } catch (error) {
@@ -219,8 +268,28 @@ const App: React.FC = () => {
         setShowChangelog(true);
       }
     };
-    syncProfile();
+
+    initializeApp();
   }, []);
+
+  if (isLocked) {
+    return (
+      <div className="fixed inset-0 bg-[#050505] flex flex-col items-center justify-center p-6 text-center z-[9999] font-sans">
+        <h1 className="text-4xl font-black text-red-600 mb-6 tracking-widest uppercase">Acesso Restrito</h1>
+        <p className="text-white/60 mb-8 max-w-md leading-relaxed text-sm">
+          O <strong className="text-white">Chord Rush</strong> é um módulo exclusivo da <strong>Acorde Gallery</strong>.
+          <br /><br />
+          Para jogar, acesse a plataforma oficial.
+        </p>
+        <a
+          href="https://acorde-gallery.vercel.app"
+          className="bg-purple-700 hover:bg-purple-600 text-white font-bold py-4 px-8 rounded-xl text-lg uppercase tracking-widest transition-all shadow-lg shadow-purple-900/20"
+        >
+          Ir para Acorde Gallery
+        </a>
+      </div>
+    );
+  }
 
   const closeChangelog = () => {
     localStorage.setItem('chordRush_version', '8.0.0');
@@ -1054,15 +1123,8 @@ const App: React.FC = () => {
                     )}
 
                     <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => {
-                          setIsRecovering(!isRecovering);
-                          setRecoveryPinInput('');
-                        }}
-                        className={`w-full ${currentArena.colors.accent} text-[10px] font-black uppercase tracking-widest py-2 active:opacity-50`}
-                      >
-                        {isRecovering ? 'Quero criar novo perfil' : 'Já jogo? Resgatar minha conta'}
-                      </button>
+                      {/* Recovery Button Removed - Gallery Auth Only */}
+
                       {(isRenaming || (showNameModal && stats.playerName)) && (
                         <button onClick={() => { setIsRenaming(false); setShowNameModal(false); setTempName(''); }} className="w-full text-white/30 text-[10px] font-black uppercase tracking-widest py-2">Cancelar</button>
                       )}
