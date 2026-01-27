@@ -1129,7 +1129,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="w-full space-y-4">
-                {((showNameModal || isRenaming) && syncDone) ? (
+                {(showNameModal || isRenaming || !stats.playerName) ? (
                   <div className="space-y-4 animate-in fade-in slide-in-from-bottom duration-500">
                     <div className="space-y-2">
                       <p className="text-white/40 text-[10px] font-black uppercase tracking-widest text-center">
@@ -1185,17 +1185,29 @@ const App: React.FC = () => {
                   <div className="space-y-5 w-full">
                     <div className="flex flex-col gap-3 w-full">
                       <button
-                        onClick={() => stats.playerName.trim() && startNewGame(GameMode.NORMAL)}
-                        disabled={!stats.playerName.trim() || !syncDone}
-                        className={`w-full relative overflow-hidden ${currentArena.colors.button} font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[8px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:brightness-110'}`}
+                        onClick={() => {
+                          if (!stats.playerName.trim()) {
+                            setShowNameModal(true);
+                            return;
+                          }
+                          startNewGame(GameMode.NORMAL);
+                        }}
+                        disabled={!syncDone}
+                        className={`w-full relative overflow-hidden ${currentArena.colors.button} font-black py-5 rounded-2xl text-2xl transition-all shadow-[0_8px_0_rgba(0,0,0,0.2)] active:shadow-none active:translate-y-[8px] uppercase ${(!syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:brightness-110'}`}
                       >
                         MODO HISTÓRIA
                       </button>
 
                       <button
-                        onClick={() => stats.playerName.trim() && startNewGame(GameMode.RUSH)}
-                        disabled={!stats.playerName.trim() || !syncDone}
-                        className={`w-full relative overflow-hidden bg-slate-800 border-2 border-slate-700 text-white font-black py-4 rounded-2xl text-xl transition-all shadow-[0_4px_0_#1e293b] active:shadow-none active:translate-y-[4px] uppercase ${(!stats.playerName.trim() || !syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-700'}`}
+                        onClick={() => {
+                          if (!stats.playerName.trim()) {
+                            setShowNameModal(true);
+                            return;
+                          }
+                          startNewGame(GameMode.RUSH);
+                        }}
+                        disabled={!syncDone}
+                        className={`w-full relative overflow-hidden bg-slate-800 border-2 border-slate-700 text-white font-black py-4 rounded-2xl text-xl transition-all shadow-[0_4px_0_#1e293b] active:shadow-none active:translate-y-[4px] uppercase ${(!syncDone) ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-700'}`}
                       >
                         MODO RUSH
                       </button>
