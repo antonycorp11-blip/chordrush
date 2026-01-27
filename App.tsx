@@ -1173,6 +1173,16 @@ const App: React.FC = () => {
                       </button>
                     )}
 
+                    {!isRecovering && !isRenaming && (
+                      <button
+                        onClick={() => setIsRecovering(true)}
+                        className="w-full text-white/40 text-[10px] font-black uppercase tracking-widest py-4 hover:text-white transition-colors border border-white/10 rounded-xl"
+                      >
+                        <i className="fa-solid fa-cloud-arrow-down mr-2"></i>
+                        Já tenho conta / Resgatar PIN
+                      </button>
+                    )}
+
                     <div className="flex flex-col gap-2">
                       {/* Recovery Button Removed - Gallery Auth Only */}
 
