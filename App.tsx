@@ -188,7 +188,6 @@ const App: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState('Iniciando Boot...');
   const [debugError, setDebugError] = useState<string | null>(null);
 
-
   const fetchDailyMissions = async () => {
     try {
       setLoadingMission(true);
@@ -205,6 +204,8 @@ const App: React.FC = () => {
       setLoadingMission(false);
     }
   };
+
+
 
   // AUTH & INITIALIZATION
   useEffect(() => {
