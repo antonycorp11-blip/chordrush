@@ -605,9 +605,6 @@ const App: React.FC = () => {
           setPlayerHP(prev => {
             const damage = 2 + (currentArena.id);
             const newHP = Math.max(0, prev - damage);
-            if (newHP <= 0 && !isEndingRef.current) {
-              setTimeout(() => endGame(), 100);
-            }
             return newHP;
           });
 
@@ -628,26 +625,73 @@ const App: React.FC = () => {
         }
       }, 200);
     }
-    return () => { if (counterAttackTimerRef.current) clearInterval(counterAttackTimerRef.current); };
+    return () => {
+      if (counterAttackTimerRef.current) clearInterval(counterAttackTimerRef.current);
+    };
   }, [gameState, showBossIntro, activeDialogue, currentArena.id]);
 
   useEffect(() => {
-    if (gameState === GameState.PLAYING && timeLeft === 0 && !isEndingRef.current) endGame();
-  }, [timeLeft, gameState]);
+    if (gameState === GameState.PLAYING && !isEndingRef.current) {
+      if (timeLeft === 0 || playerHP <= 0) {
+        endGame();
+      }
+    }
+  }, [timeLeft, playerHP, gameState]);
 
   const endGame = async () => {
     if (isEndingRef.current) return;
     isEndingRef.current = true;
+
+    // 1. Parar todos os timers imediatamente para o tempo não continuar correndo
     if (timerRef.current) clearInterval(timerRef.current);
+    if (counterAttackTimerRef.current) clearInterval(counterAttackTimerRef.current);
     if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
 
-    // Captura os valores do estado NO MOMENTO do fim do jogo
-    const finalScore = score;
-    const finalLevel = currentLevel;
-    const finalXP = sessionXP;
+    // 2. Capturar valores estáveis
+    const finalScore = scoreRef.current;
+    const finalLevel = levelRef.current;
+    const finalXP = sessionXPRef.current;
+    const deviceId = getDeviceId();
 
-    setGameState(GameState.GAMEOVER);
-    stopBattleMusic();
+    // 3. Atualizar Missões (Sincronização de progresso diário)
+    await updateMissionProgress();
+
+    setIsSavingScore(true);
+    try {
+      // REQUISITO: Usar submit_score com PIN ou DeviceID para garantir o envio de XP para a Galeria
+      const identifier = stats.recoveryPin || deviceId;
+      console.log('Enviando score para Acorde Gallery...', { identifier, finalScore, finalLevel });
+
+      const { data: galleryResult, error: galleryError } = await supabase.rpc('submit_score', {
+        device_id_param: identifier,
+        score_param: finalScore,
+        level_param: finalLevel
+      });
+
+      if (galleryError) {
+        console.error('Erro ao salvar score no Acorde Gallery (submit_score):', galleryError.message);
+      } else {
+        console.log('Score enviado com sucesso para a Galeria:', galleryResult);
+      }
+
+      // SEMPRE salvar também no sistema local para atualizar moedas e recorde
+      const { data: localResult, error: localError } = await supabase.rpc('secure_end_game_v5', {
+        device_id_param: deviceId,
+        score_param: finalScore,
+        level_param: finalLevel,
+        xp_param: finalXP
+      });
+
+      if (localError) {
+        console.error('Erro ao salvar score local (secure_end_game_v5):', localError.message);
+      } else {
+        console.log('Progresso local sincronizado:', localResult);
+      }
+    } catch (err) {
+      console.error('Erro crítico no envio do score:', err);
+    }
+
+    // 5. Atualizar Estado Local e Mostrar Tela Final
     setStats(prev => ({
       ...prev,
       highScore: Math.max(prev.highScore, finalScore),
@@ -655,54 +699,23 @@ const App: React.FC = () => {
       accumulatedXP: (prev.accumulatedXP || 0) + finalXP
     }));
 
-    // Sincronizar progresso da missão
-    await updateMissionProgress();
-
-    setIsSavingScore(true);
-    const deviceId = getDeviceId();
-    const { data: saveResult, error } = await supabase.rpc('secure_end_game_v5', {
-      device_id_param: deviceId,
-      score_param: finalScore,
-      level_param: finalLevel,
-      xp_param: finalXP
-    });
-
-    if (error) {
-      console.error('Erro grave V5:', error.message);
-      alert('⚠️ ERRO AO SALVAR: ' + error.message);
-    } else {
-      console.log('Score V5 registrado:', saveResult);
-      if (saveResult?.status === 'success') {
-        alert('✅ PONTUAÇÃO REGISTRADA: ' + finalScore + ' pts');
-      }
-    }
+    stopBattleMusic();
     setIsSavingScore(false);
+    setGameState(GameState.GAMEOVER);
 
     // VERIFICAR DESBLOQUEIO DE ARENA (Feature de Progressão)
-    // Se o jogador venceu (Score > 0 implica vitória do nível ou término com pontos)
-    // E estava na arena máxima desbloqueada
-    // E a barra de progresso estava cheia (Boss HP <= 0)
     const currentUnlockedId = stats.unlockedArenaId || 1;
-    // Recalcula progresso localmente para ter certeza
-    const xpArenaForCalc = getCurrentArena((stats.accumulatedXP || 0) + finalXP);
-    // Nota: O cálculo exato de arenaProgress depende do minXP da arena atual.
-    // Mas simplificando: Se a arena atual (pelo ID) é menor que a arena de XP, então progresso é 100%
-    const isBossDefeated = (stats.accumulatedXP || 0) + finalXP >= nextArena.minXP;
+    const estimatedTotalXP = (stats.accumulatedXP || 0) + finalXP;
+    const nextArenaData = ARENAS.find(a => a.id === currentArena.id + 1);
+    const isBossDefeated = nextArenaData ? estimatedTotalXP >= nextArenaData.minXP : false;
 
-    // Se estavamos jogando na arena limite E o Boss estava "vulnerável" (HP zero / Progresso 100%) - SOMENTE NO MODO HISTÓRIA
     if (mode !== GameMode.RUSH && currentArena.id === currentUnlockedId && isBossDefeated && finalScore > 0) {
-      // Desbloquear próxima arena
       const nextId = currentUnlockedId + 1;
-      // Verifica se existe próxima arena
       const existsNext = ARENAS.find(a => a.id === nextId);
 
       if (existsNext) {
         try {
-          // Atualiza Local
           setStats(prev => ({ ...prev, unlockedArenaId: nextId, lastPlayedArenaId: nextId }));
-          alert(`🏆 GUARDIÃO DERROTADO! Arena ${nextId} Desbloqueada!`);
-
-          // Atualiza Remoto via RPC
           await supabase.rpc('unlock_next_arena', {
             device_id_param: deviceId,
             current_arena_id: currentUnlockedId
@@ -925,7 +938,10 @@ const App: React.FC = () => {
       setCombo(0);
       setIsSpecialCharged(false);
       setBossStatus('attacking');
-      setPlayerHP(prev => Math.max(0, prev - 10));
+      setPlayerHP(prev => {
+        const newHP = Math.max(0, prev - 10);
+        return newHP;
+      });
       setTimeout(() => setBossStatus('idle'), 500);
 
       // Reação do Boss ao Erro (DESATIVADA NO RUSH)
@@ -1101,22 +1117,7 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {gameState === GameState.PLAYING && playerHP <= 0 && (
-          <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-8 animate-in fade-in">
-            <div className="relative mb-8">
-              <i className="fa-solid fa-skull text-8xl text-red-600 animate-bounce"></i>
-              <div className="absolute inset-0 bg-red-600/20 blur-3xl rounded-full"></div>
-            </div>
-            <h2 className="text-5xl font-black text-red-600 mb-2 font-medieval text-center">DERROTADO</h2>
-            <p className="text-white/60 text-center mb-10 uppercase tracking-[0.3em] text-[10px] font-bold">Sua melodia foi silenciada...</p>
-            <button
-              onClick={() => endGame()}
-              className="w-full max-w-[240px] bg-red-600 hover:bg-red-500 text-white font-black py-5 rounded-2xl text-lg uppercase tracking-widest active:scale-95 transition-all shadow-[0_8px_0_#991b1b]"
-            >
-              RETORNAR AO MENU
-            </button>
-          </div>
-        )}
+
 
         {gameState === GameState.MENU && (
           <div className="w-full h-full flex flex-col items-center justify-center p-4 overflow-hidden relative">
